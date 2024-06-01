@@ -1,0 +1,382 @@
+{% extends 'base.html' %}
+{% load qna_filter %}
+{% block content %}
+
+<style>
+@media (max-width: 768px) { /* 화면 너비가 768px 이하인 경우 */
+          .col-5.text-end {
+        text-align: right; /* 검색창을 오른쪽으로 정렬 */
+        }
+
+        .btn-group.col-2 {
+            display: flex; /* 버튼 그룹을 행 안에 표시하도록 설정 */
+            align-items: center; /* 버튼을 수직 가운데 정렬하도록 설정 */
+            justify-content: flex-start; /* 토글 버튼을 왼쪽으로 정렬 */
+            width: auto; /* 버튼 그룹의 너비를 자동으로 설정 */
+            margin-right: 0; /* 오른쪽 여백 제거 */
+            padding: 0 !important;
+        }
+
+        .col-2, .col-5 {
+            width: auto !important; /* 너비를 자동으로 설정 */
+            margin-right: 0 !important; /* 오른쪽 여백 제거 */
+        }
+
+        .col-2 {
+            padding: 10px !important; /* 글쓰기 버튼의 패딩 설정 */
+        }
+
+        .col-5 select {
+            width: 100%; /* select 요소가 부모 너비를 모두 차지하도록 설정 */
+            margin-left: 0.5rem; /* 좌측 여백 설정 */
+        }
+
+        .input-group-append {
+            display: flex; /* 찾기 버튼을 행 안에 표시하도록 설정 */
+            align-items: center; /* 찾기 버튼을 수직 가운데 정렬하도록 설정 */
+            justify-content: flex-end; /* 검색 버튼을 오른쪽으로 정렬 */
+
+        }
+
+        .input-group-append .btn {
+            flex: 0 0 auto; /* 버튼 크기를 자동으로 설정하고 크기가 변하지 않도록 설정 */
+            margin-left: 0.5rem; /* 왼쪽 여백 설정 */
+        }
+
+        .btn {
+            height: 30px; /* 원하는 높이로 설정 */
+            line-height: 20px; /* 버튼 안의 텍스트를 수직 가운데 정렬하기 위한 설정 */
+        }
+
+        /* 드롭다운 토글 버튼 */
+        .form-select {
+            font-size: 12px; /* 드롭다운 버튼의 폰트 크기 */
+            text-align: right; /* 우측 정렬 */
+            margin-left: 0 !important; /* 오른쪽 여백 제거 */
+            height: 30px; /* 토글 버튼의 높이를 조절 */
+            width: 50px!important; /* 토글 버튼의 너비를 조절 */
+
+        }
+         /* 검색창을 최대 너비로 설정 */
+        .col-7 {
+            width: 70% !important;
+        }
+
+
+        /* 테이블 최적화 */
+        .table {
+            font-size: 0.9rem; /* 테이블 전체의 글꼴 크기를 조정 */
+        }
+
+        .table thead th {
+            vertical-align: middle; /* 테이블 머리글의 내용을 수직 가운데 정렬 */
+        }
+
+        .table tbody td {
+            vertical-align: middle; /* 테이블 본문의 내용을 수직 가운데 정렬 */
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem; /* 셀 안의 콘텐츠 주위의 패딩을 설정 */
+            border-top-width: 0; /* 상단 테두리 너비를 0으로 설정하여 셀 간 간격을 줄임 */
+        }
+
+        .table th {
+            font-weight: normal; /* 테이블 머리글의 글꼴 굵기를 기본 값으로 설정 */
+            border-bottom-width: 2px; /* 하단 테두리 너비를 조정하여 머리글과 본문을 구분 */
+        }
+
+        .table td {
+            border-bottom-width: 1px; /* 하단 테두리 너비를 조정하여 테이블 행을 구분 */
+        }
+
+        .table .align-middle {
+            vertical-align: middle !important; /* 수직 가운데 정렬 클래스에 중요성을 부여하여 강제로 적용 */
+        }
+        h5.border-bottom {
+           margin-top: 20px; /* 원하는 만큼의 위쪽 마진을 설정하세요 */
+        }
+        #questionTable th:nth-child(1), /* 추천 열의 너비를 조정합니다. */
+        #questionTable td:nth-child(1) {
+            width: 15%; /* 추천 열의 너비를 15%로 설정합니다. */
+        }
+
+}
+
+</style>
+
+
+<h5 class="border-bottom pb-2 mb-3">Q&A</h5>
+<div class="container my-3">
+    <!-- 정렬 및 검색을 위한 행 -->
+    <div class="row my-3 align-items-center">
+        <!-- 정렬 버튼 그룹 (왼쪽 정렬) -->
+        <div class="btn-group col-2" role="group" style="font-size: 12px; margin-right: 0px;"> <!-- 오른쪽으로 20px 이동 -->
+            <!-- 최신순 -->
+            <button type="button" title="" class="btn btn-sm btn-secondary so {% if order_by == 'recent' %}active{% endif %}" data-so="recent" data-original-title="최신순">
+                <i class="fas fa-list"></i>
+            </button>
+            <!-- 추천순 -->
+            <button type="button" title="" class="btn btn-sm btn-secondary so {% if order_by == 'recommend' %}active{% endif %}" data-so="recommend" data-original-title="추천순">
+                <i class="fas fa-thumbs-up"></i>
+            </button>
+            <!-- 인기순 -->
+            <button type="button" title="" class="btn btn-sm btn-secondary so {% if order_by == 'popular' %}active{% endif %}" data-so="popular" data-original-title="인기순">
+                <i class="fas fa-fire"></i>
+            </button>
+        </div>
+
+                <!-- 글쓰기 버튼 -->
+        <div class="col-2", style="margin-right: 230px;">
+            <a href="{% url 'qna:question_create' %}" class="btn btn-primary btn-block">Write</a>
+        </div>
+
+        <!-- 검색창 (오른쪽 정렬) -->
+        <div class="col-5 text-end">
+            <div class="row">
+                <!-- 검색 옵션 선택 드롭다운 -->
+                <div class="col-5">
+                    <select class="form-select" id="search_option">
+                        <option value="all" {% if search_option == 'all' %}selected{% endif %}>Title+Content</option>
+                        <option value="title" {% if search_option == 'title' %}selected{% endif %}>Subject</option>
+                        <option value="content" {% if search_option == 'content' %}selected{% endif %}>Content</option>
+                        <option value="comment" {% if search_option == 'comment' %}selected{% endif %}>Comment</option>
+                        <option value="nickname" {% if search_option == 'nickname' %}selected{% endif %}>User</option>
+                    </select>
+                </div>
+                <!-- 검색어 입력 창 -->
+                <div class="col-7" style="max-width: 800px;">
+                    <div class="input-group">
+                        <input type="text" id="search_kw" class="form-control" value="{{ kw|default_if_none:'' }}">
+                        <div class="input-group-append">
+                            <!-- 검색 버튼 -->
+                            <button class="btn btn-outline-secondary" type="button" id="btn_search">Search</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table class="table" id="questionTable">
+    <thead>
+    <tr class="text-center table-dark">
+        <th>R</th>
+        <th style="width:50%">Subject</th>
+        <th>User</th>
+        <th>View</th>
+        <th>Date</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% if question_list %}
+    {% for question in question_list %}
+    <tr class="text-center">
+        <td class="align-middle">
+            <span id="recommendCount{{ question.id }}" class="badge badge-warning px-2 py-1">{% if question.voter.count > 0 %}{{ question.voter.count }}{% else %}0{% endif %}</span>
+        </td>
+
+        <td class="text-start">
+            <a href="{% url 'qna:detail' question.id %}">{{ question.subject }}</a>
+            {% if question.answer_set.count > 0 %}
+            <span class="text-danger small mx-2">{{ question.answer_set.count }}</span>
+            {% endif %}
+        </td>
+
+        <td>{{ question.author.username }}</td>
+        <td>{{ question.views }}</td>
+        <td>{{ question.create_date|date:"y.m/d" }}</td>
+    </tr>
+    {% endfor %}
+    {% else %}
+    <tr>
+        <td colspan="4">No questions available.</td>
+    </tr>
+    {% endif %}
+
+
+    </tbody>
+</table>
+<!-- 페이징처리 시작 -->
+<ul class="pagination justify-content-center">
+    <!-- 이전페이지 -->
+    {% if question_list.has_previous %}
+    <li class="page-item">
+        <a class="page-link" data-page="{{ question_list.previous_page_number }}" href="javascript:void(0)">Prev</a>
+    </li>
+    {% else %}
+    <li class="page-item disabled">
+        <a class="page-link" tabindex="-1" aria-disabled="true" href="#">Prev</a>
+    </li>
+    {% endif %}
+    <!-- 페이지리스트 -->
+    {% for page_number in question_list.paginator.page_range %}
+    {% if page_number >= question_list.number|add:-5 and page_number <= question_list.number|add:5 %}
+    {% if page_number == question_list.number %}
+    <li class="page-item active" aria-current="page">
+        <a class="page-link" data-page="{{ page_number }}" href="javascript:void(0)">{{ page_number }}</a>
+    </li>
+    {% else %}
+    <li class="page-item">
+        <a class="page-link" data-page="{{ page_number }}" href="javascript:void(0)">{{ page_number }}</a>
+    </li>
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+    <!-- 다음페이지 -->
+    {% if question_list.has_next %}
+    <li class="page-item">
+        <a class="page-link" data-page="{{ question_list.next_page_number }}" href="javascript:void(0)">Next</a>
+    </li>
+    {% else %}
+    <li class="page-item disabled">
+        <a class="page-link" tabindex="-1" aria-disabled="true" href="#">Next</a>
+    </li>
+    {% endif %}
+</ul>
+<!-- 페이징처리 끝 -->
+<form id="searchForm" method="get" action="{% url 'index' %}">
+    <input type="hidden" id="kw" name="kw" value="{{ kw|default_if_none:'' }}">
+    <input type="hidden" id="page" name="page" value="{{ page }}">
+</form>
+
+{% endblock %}
+
+{% block script %}
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script type="text/javascript">
+    // 페이지 로딩 후 이벤트 리스너 등록
+    $(document).ready(function () {
+        registerEventListeners();
+        highlightRecommendations();
+
+        // 추가: 현재 URL에 정렬 기준이 있는 경우 해당 정렬 기준 버튼을 활성화
+        const currentSortOption = getParameterByName("sort_by");
+        if (currentSortOption) {
+            $(".so").removeClass("active");
+            $(`.so[data-so="${currentSortOption}"]`).addClass("active");
+        }
+
+        // 추가: 검색 옵션 가져오기
+        const currentSearchOption = getParameterByName("search_option");
+        if (currentSearchOption) {
+            $("#search_option").val(currentSearchOption);
+        }
+
+        // 추가: 페이지 이동 기능
+        $(".page-link").click(function () {
+            const page = $(this).data("page");
+            const searchParams = new URLSearchParams(window.location.search);
+            searchParams.set("page", page);
+            const sortParam = getParameterByName("sort_by");
+            if (sortParam) {
+                searchParams.set("sort_by", sortParam);
+            }
+            const searchOption = getSearchOption();
+            if (searchOption) {
+                searchParams.set("search_option", searchOption);
+            }
+            window.location.search = searchParams.toString();
+        });
+
+        // 검색 기능
+        $("#btn_search").click(function () {
+            const kw = $("#search_kw").val();
+            const searchOption = getSearchOption();
+            const sortOption = getSortOption();
+            const searchParams = new URLSearchParams(window.location.search);
+            searchParams.set("kw", kw);
+            searchParams.set("page", 1);
+            searchParams.set("search_option", searchOption);
+            searchParams.set("sort_by", sortOption);
+            window.location.href = "{% url 'qna:index' %}?" + searchParams.toString();
+
+        });
+    });
+
+    function getSearchOption() {
+        return $("#search_option").val();
+    }
+
+    function getSortOption() {
+        return $(".so.active").data('so');
+    }
+
+    function registerEventListeners() {
+        // 추천 버튼에 대한 이벤트 리스너 등록
+        $('.so').off('mouseenter mouseleave click').on({
+            mouseenter: function () {
+                // 마우스를 올렸을 때
+                const originalTitle = $(this).data('original-title');
+                $(this).find('.icon-text').text(originalTitle).show();
+            },
+            mouseleave: function () {
+                // 마우스를 내렸을 때
+                $(this).find('.icon-text').hide();
+            },
+            click: function () {
+                // 클릭했을 때
+                const soValue = $(this).data('so');
+                console.log(soValue);
+
+                // 클릭한 버튼에 따라 thead의 순서를 변경하는 로직 추가
+                if (soValue === 'recent') {
+                    // 최신순 정렬
+                    sortTable(4);
+                } else if (soValue === 'recommend') {
+                    // 추천순 정렬
+                    sortTable(0);
+                } else if (soValue === 'popular') {
+                    // 인기순 정렬
+                    sortTable(3);
+                }
+            }
+        });
+    }
+
+    function sortTable(columnIndex) {
+        const table = $('#questionTable'); // 테이블 선택
+        const tbody = table.find('tbody'); // tbody 선택
+        const rows = tbody.find('tr').get(); // 행을 배열로 가져오기
+
+        rows.sort(function (a, b) {
+            const A = parseInt($(a).children('td').eq(columnIndex).text());
+            const B = parseInt($(b).children('td').eq(columnIndex).text());
+
+            // 내림차순 정렬
+            return B - A;
+        });
+
+        // 행을 순서대로 tbody에 추가
+        $.each(rows, function (index, row) {
+            tbody.append(row);
+        });
+    }
+
+    function highlightRecommendations() {
+        // 모든 질문에 대해 추천 수에 따라 배경 색 변경
+        $('[id^="recommendCount"]').each(function () {
+            const recommendCount = parseInt($(this).text());
+            if (recommendCount > 0) {
+                $(this).css('background-color', '#FFC107').css('color', '#000000');
+            } else {
+                $(this).css('background-color', 'rgba(169, 169, 169, 0.5)').css('opacity', '0.5');
+            }
+        });
+    }
+
+    // 특정 이름의 매개변수 값을 가져오는 함수
+    function getParameterByName(name, url) {
+        if (!url) url = window.location.href;
+        name = name.replace(/[\[\]]/g, "\\$&");
+        const regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, " "));
+    }
+</script>
+{% endblock %}
+

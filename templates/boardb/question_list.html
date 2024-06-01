@@ -1,0 +1,769 @@
+{% extends 'base.html' %}
+{% load main_filter %}
+
+{% block content %}
+
+<style>
+/* 선택된 단위와 결과값을 떨어뜨리는 스타일 */
+#inputValue,
+#outputValue {
+    margin-bottom: 10px; /* 선택된 단위 아래 여백 추가 */
+    display: inline-block; /* 인라인 요소로 배치되도록 설정 */
+}
+
+/* 박스 스타일 */
+.input-box,
+.result-box {
+    width: 100%; /* 너비 조절 */
+    height: 100%; /* 너비 조절 */
+    max-width: 400px; /* 최대 너비 설정 */
+    height: 260px; /* 높이 조절 */
+    border: 1px solid #ccc; /* 테두리 설정 */
+    padding: 10px; /* 안쪽 여백 설정 */
+    margin-top: 10px; /* 아래 여백 설정 */
+    margin-bottom: 20px; /* 아래 여백 설정 */
+    display: inline-block; /* 인라인 요소로 배치되도록 설정 */
+    border-radius: 5px; /* 둥근 모서리 설정 */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* 입체적인 그림자 효과 추가 */
+}
+
+.input-box {
+    margin-right: 10px; /* 결과 박스와의 간격 설정 */
+}
+
+.input-container,
+.result-container {
+    margin-bottom: 10px; /* 입력창과 결과창 간의 간격 조절 */
+}
+
+input[type="number"] {
+    width: 130px; /* 입력창 너비 조절 */
+}
+
+button {
+    margin-right: 5px; /* 버튼 간의 간격 조절 */
+}
+
+/* Input Box 내부의 버튼과 입력창 사이 간격 조절 */
+.input-box button {
+    margin-bottom: 10px;
+}
+
+/* Result Box 내부의 버튼과 결과창 사이 간격 조절 */
+.result-box button {
+    margin-bottom: 10px;
+}
+
+
+.notepad textarea {
+    width: 100%;
+    padding: 5px;
+    font-size: 120%;
+    border: none;
+    border-bottom: 3px solid blue; /* 밑줄 설정 */
+    resize: none; /* 사용자 크기 조정 비활성화 */
+    border: 1px solid #ccc; /* 테두리 설정 */
+    height: 150px;
+    overflow-y: hidden; /* 수직 스크롤바 숨김 */
+    box-shadow: 0 0px 50px rgba(0, 0, 0, 0.1); /* 입체적인 그림자 효과 추가 */
+}
+
+.notepad-container {
+    display: flex; /* Flexbox를 사용하여 요소들을 배치 */
+    width: 827px; /* 노트패드 컨테이너의 너비 설정 */
+    margin-top: 20px; /* 위쪽 여백 설정 */
+    border-radius: 5px; /* 노트패드 컨테이너의 끝 모서리에 R값 지정 */
+    overflow: hidden; /* 노트패드 컨테이너가 내용을 감출 때 사용됨 */
+}
+
+.calculator-notepad-container {
+    display: flex; /* Flexbox를 사용하여 요소들을 배치 */
+}
+
+.calculator {
+    flex: 1; /* 동일한 너비를 가지도록 설정 */
+}
+
+.notepad {
+    flex: 1; /* 동일한 너비를 가지도록 설정 */
+    display: flex; /* Flexbox를 사용하여 요소들을 배치 */
+    align-items: flex-start; /* 요소를 수직으로 상단에 정렬 */
+    border-radius: 0 5px 5px 5px; /* 오른쪽 끝 모서리에만 R값 지정 */
+    margin-left: 20px; /* 노트패드와 계산기 사이 간격 설정 */
+}
+
+
+
+
+
+.calculator-notepad-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* 가운데 정렬 */
+  width: 100%;
+}
+
+.calculator-container {
+  display: flex;
+  flex-direction: column; /* 위아래로 배치되도록 변경 */
+  width: 100%;
+}
+
+.history-container {
+  max-width: 400px; /* 히스토리 컨테이너의 최대 너비 설정 */
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  margin-bottom: 20px; /* 위아래 여백 추가 */
+}
+
+.calculator {
+  max-width: 400px; /* 계산기의 최대 너비 설정 */
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  height: 320px; /* 원하는 높이로 설정 */
+  margin-bottom: 20px; /* 위아래 여백 추가 */
+}
+
+.history {
+  background-color: #f9f9f9;
+  padding: 10px;
+  border-radius: 5px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.display {
+position: relative;
+background-color: #f9f9f9;
+padding: 10px;
+text-align: right;
+}
+
+.display input {
+width: 100%;
+padding: 8px;
+font-size: 20px;
+border: 1px solid #ccc; /* 테두리 설정 */
+}
+
+.buttons {
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+}
+
+.buttons button {
+border: none;
+background-color: #f3f3f3;
+padding: 6px;
+font-size: 1.2em;
+cursor: pointer;
+box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); /* 입체적인 그림자 효과 추가 */
+transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s; /* 전환 효과 추가 */
+}
+
+.buttons button:hover {
+background-color: #e0e0e0;
+transform: translateY(-2px); /* 마우스 오버 시 약간 위로 이동 */
+box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); /* 그림자 효과 변경 */
+}
+
+
+<!--.notepad textarea {-->
+<!--    width: 100%;-->
+<!--    padding: 5px;-->
+<!--    font-size: 120%;-->
+<!--    border: none;-->
+<!--    border-bottom: 3px solid blue; /* 밑줄 설정 */-->
+<!--    resize: none; /* 사용자 크기 조정 비활성화 */-->
+<!--    border: 1px solid #ccc; /* 테두리 설정 */-->
+<!--    height: 150px-->
+<!--    overflow-y: hidden; /* 수직 스크롤바 숨김 */-->
+<!--    box-shadow: 0 0px 50px rgba(0, 0, 0, 0.1); /* 입체적인 그림자 효과 추가 */-->
+<!--}-->
+
+<!--.notepad-container {-->
+<!--    display: flex; /* Flexbox를 사용하여 요소들을 배치 */-->
+<!--}-->
+
+<!--.calculator, .notepad {-->
+<!--    flex: 1; /* 동일한 너비를 가지도록 설정 */-->
+<!--}-->
+
+<!--.notepad {-->
+
+<!--    display: flex; /* Flexbox를 사용하여 요소들을 배치 */-->
+<!--    align-items: flex-start; /* 요소를 수직으로 상단에 정렬 */-->
+<!--    border-radius: 0 5px 5px 5px; /* 오른쪽 끝 모서리에만 R값 지정 */-->
+<!--}-->
+
+<!--.notepad-container {-->
+<!--    width: 100%; /* 노트패드 컨테이너의 너비 설정 */-->
+<!--    float: right; /* 오른쪽으로 배치 */-->
+<!--    margin-top: 20px; /* 위쪽 여백 설정 */-->
+<!--    margin-right: 140px;-->
+<!--    border-radius: 5px; /* 노트패드 컨테이너의 끝 모서리에 R값 지정 */-->
+<!--    overflow: hidden; /* 노트패드 컨테이너가 내용을 감출 때 사용됨 */-->
+<!--}-->
+
+</style>
+
+
+<!-- Input Box -->
+<div class="input-box">
+    <h3>Input</h3>
+    <div class="input-container">
+        <input type="number" id="inputValue" placeholder="Click">
+        <span id="selectedUnit"></span>
+    </div>
+    <div>
+        <!-- 유닛 문자열 수정 -->
+        <button onclick="setInputUnit('kgf/cm2')" id="kgfcm2Btn">kgf/cm<sup>2</sup></button>
+        <button onclick="setInputUnit('N/m2')" id="Nm2Btn">N/m<sup>2</sup></button>
+        <button onclick="setInputUnit('N/cm2')" id="Ncm2Btn">N/cm<sup>2</sup></button>
+        <button onclick="setInputUnit('Pa')" id="PaBtn">Pa</button>
+        <button onclick="setInputUnit('MPa')" id="MPaBtn">MPa</button>
+        <button onclick="setInputUnit('kN/cm2')" id="kNcm2Btn">kN/cm<sup>2</sup></button>
+        <button onclick="setInputUnit('kN/mm2')" id="kNmm2Btn">kN/mm<sup>2</sup></button>
+        <button onclick="setInputUnit('kgf/m2')" id="kgfm2Btn">kgf/m<sup>2</sup></button>
+        <button onclick="setInputUnit('kgf/mm2')" id="kgfmm2Btn">kgf/mm<sup>2</sup></button>
+        <button onclick="setInputUnit('kPa')" id="kPaBtn">kPa</button>
+        <button onclick="setInputUnit('N/mm2')" id="Nmm2Btn">N/mm<sup>2</sup></button>
+    </div>
+</div>
+
+<!-- Result Box -->
+<div class="result-box">
+    <h3>Result</h3>
+    <div class="result-container">
+        <input type="number" id="outputValue" readonly disabled>
+        <span id="selectedOutputUnit"></span>
+    </div>
+    <div>
+        <!-- 유닛 문자열 수정 -->
+        <button onclick="convertTo('kgf/cm2')" id="kgfcm2ResultBtn">kgf/cm<sup>2</sup></button>
+        <button onclick="convertTo('N/m2')" id="Nm2ResultBtn">N/m<sup>2</sup></button>
+        <button onclick="convertTo('N/cm2')" id="Ncm2ResultBtn">N/cm<sup>2</sup></button>
+        <button onclick="convertTo('Pa')" id="PaResultBtn">Pa</button>
+        <button onclick="convertTo('MPa')" id="MPaResultBtn">MPa</button>
+        <button onclick="convertTo('kN/cm2')" id="kNcm2ResultBtn">kN/cm<sup>2</sup></button>
+        <button onclick="convertTo('kN/mm2')" id="kNmm2ResultBtn">kN/mm<sup>2</sup></button>
+        <button onclick="convertTo('kgf/m2')" id="kgfm2ResultBtn">kgf/m<sup>2</sup></button>
+        <button onclick="convertTo('kgf/mm2')" id="kgfmm2ResultBtn">kgf/mm<sup>2</sup></button>
+        <button onclick="convertTo('kPa')" id="kPaResultBtn">kPa</button>
+        <button onclick="convertTo('N/mm2')" id="Nmm2ResultBtn">N/mm<sup>2</sup></button>
+    </div>
+</div>
+
+<div class="calculator-notepad-container">
+ <div class="calculator-container">
+  <!-- 계산기 -->
+  <div class="calculator">
+    <div class="display">
+      <input id="result" type="text" placeholder="Click and use the keypad (ex) 1+1..." readonly>
+    </div>
+    <div class="buttons">
+        <!-- 계산기 버튼은 동일하게 유지 -->
+        <button onclick="appendToDisplay('%')">%</button>
+        <button onclick="clearEntry()">CE</button>
+        <button onclick="clearDisplay()">C</button>
+        <button onclick="backspace()">Backspace</button>
+        <button onclick="reciprocal()">1/x</button>
+        <button onclick="square()">x^2</button>
+        <button onclick="sqrt2()">2√x</button>
+
+        <button onclick="appendToDisplay('/')">÷</button>
+        <button onclick="appendToDisplay('7')">7</button>
+        <button onclick="appendToDisplay('8')">8</button>
+        <button onclick="appendToDisplay('9')">9</button>
+        <button onclick="appendToDisplay('*')">x</button>
+        <button onclick="appendToDisplay('4')">4</button>
+        <button onclick="appendToDisplay('5')">5</button>
+        <button onclick="appendToDisplay('6')">6</button>
+        <button onclick="appendToDisplay('-')">-</button>
+        <button onclick="appendToDisplay('1')">1</button>
+        <button onclick="appendToDisplay('2')">2</button>
+        <button onclick="appendToDisplay('3')">3</button>
+        <button onclick="appendToDisplay('+')">+</button>
+        <button onclick="powerXY()">X<sup>Y</sup></button>
+        <button onclick="appendToDisplay('0')">0</button>
+        <button onclick="appendToDisplay('.')">.</button>
+        <button onclick="calculateResult()">=</button>
+    </div>
+  </div>
+
+  <!-- 히스토리 -->
+  <div class="history-container">
+    <div class="history" id="history" ></div>
+  </div>
+</div>
+</div>
+
+<script>
+let inputValue = 0;
+let inputUnit = '';
+let outputUnit = '';
+let lastClickedInputUnitBtn = null;
+let lastClickedResultUnitBtn = null;
+let activeInput = null;
+
+function setActiveInput(inputId) {
+  activeInput = inputId;
+}
+
+function appendToActiveInput(value) {
+  if (activeInput === 'calculatorInput') {
+    appendToDisplay(value);
+  } else if (activeInput === 'unitConversionInput') {
+    appendToUnitConversionInput(value);
+  }
+}
+
+document.querySelectorAll('input[type=radio]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    if (this.value === 'calculator') {
+      setActiveInput('calculatorInput');
+    } else if (this.value === 'unitConversion') {
+      setActiveInput('unitConversionInput');
+    }
+  });
+});
+
+function setInputUnit(unit) {
+    inputUnit = unit;
+    document.getElementById("selectedUnit").textContent = unit;
+    if (lastClickedInputUnitBtn) {
+        lastClickedInputUnitBtn.style.backgroundColor = '';
+    }
+    lastClickedInputUnitBtn = document.getElementById(unit + "Btn");
+    lastClickedInputUnitBtn.style.backgroundColor = 'orange';
+    // 입력 단위가 변경될 때마다 결과를 다시 계산하고 표시
+    convertTo(outputUnit);
+}
+
+function convertTo(unit) {
+    if (inputUnit === unit) {
+        document.getElementById("outputValue").value = inputValue;
+        document.getElementById("selectedOutputUnit").textContent = unit;
+        if (lastClickedResultUnitBtn) {
+            lastClickedResultUnitBtn.style.backgroundColor = '';
+        }
+        lastClickedResultUnitBtn = document.getElementById(unit + "ResultBtn");
+        lastClickedResultUnitBtn.style.backgroundColor = 'orange';
+
+        outputUnit = unit;
+        return;
+    }
+
+    const conversions = {
+        'kgf/cm2': {
+            'N/m2': inputValue => inputValue * 98066.5,
+            'N/cm2': inputValue => inputValue * 98.0665,
+            'Pa': inputValue => inputValue * 98066.5,
+            'MPa': inputValue => inputValue * 0.0980665,
+            'kN/cm2': inputValue => inputValue * 0.0980665,
+            'kN/mm2': inputValue => inputValue * 0.0000980665,
+            'kgf/m2': inputValue => inputValue * 0.00101972, // 추가
+            'kgf/mm2': inputValue => inputValue * 1.01972e-8, // 추가
+            'kPa': inputValue => inputValue * 0.001, // 추가
+            'N/mm2': inputValue => inputValue * 1e-6 // 추가
+        },
+        'N/m2': {
+            'kgf/cm2': inputValue => inputValue * 0.0000101972,
+            'N/cm2': inputValue => inputValue * 0.0001,
+            'Pa': inputValue => inputValue,
+            'MPa': inputValue => inputValue * 0.000001,
+            'kN/cm2': inputValue => inputValue * 0.000001,
+            'kN/mm2': inputValue => inputValue * 0.000000001,
+            'kgf/m2': inputValue => inputValue * 0.00101972, // 추가
+            'kgf/mm2': inputValue => inputValue * 1.01972e-8, // 추가
+            'kPa': inputValue => inputValue * 0.001, // 추가
+            'N/mm2': inputValue => inputValue * 1e-6 // 추가
+        },
+        'N/cm2': {
+            'kgf/cm2': inputValue => inputValue * 0.0101972,
+            'N/m2': inputValue => inputValue * 10000,
+            'Pa': inputValue => inputValue * 10000,
+            'MPa': inputValue => inputValue * 0.01,
+            'kN/cm2': inputValue => inputValue * 0.01,
+            'kN/mm2': inputValue => inputValue * 0.00001,
+            'kgf/m2': inputValue => inputValue * 10197.2, // 추가
+            'kgf/mm2': inputValue => inputValue * 0.101972, // 추가
+            'kPa': inputValue => inputValue * 10, // 추가
+            'N/mm2': inputValue => inputValue * 0.1 // 추가
+        },
+        'Pa': {
+            'kgf/cm2': inputValue => inputValue * 0.0000101972,
+            'N/m2': inputValue => inputValue,
+            'N/cm2': inputValue => inputValue * 0.0001,
+            'MPa': inputValue => inputValue * 0.000001,
+            'kN/cm2': inputValue => inputValue * 0.000001,
+            'kN/mm2': inputValue => inputValue * 0.000000001,
+            'kgf/m2': inputValue => inputValue * 0.00101972, // 추가
+            'kgf/mm2': inputValue => inputValue * 1.01972e-8, // 추가
+            'kPa': inputValue => inputValue * 0.001, // 추가
+            'N/mm2': inputValue => inputValue * 1e-6 // 추가
+        },
+        'MPa': {
+            'kgf/cm2': inputValue => inputValue * 10.1972,
+            'N/m2': inputValue => inputValue * 1000000,
+            'N/cm2': inputValue => inputValue * 100000,
+            'Pa': inputValue => inputValue * 1000000,
+            'kN/cm2': inputValue => inputValue * 1000,
+            'kN/mm2': inputValue => inputValue,
+            'kgf/m2': inputValue => inputValue * 10197200, // 추가
+            'kgf/mm2': inputValue => inputValue * 101.972, // 추가
+            'kPa': inputValue => inputValue * 1000, // 추가
+            'N/mm2': inputValue => inputValue * 1000000 // 추가
+        },
+        'kN/cm2': {
+            'kgf/cm2': inputValue => inputValue * 10.1972,
+            'N/m2': inputValue => inputValue * 100000000,
+            'N/cm2': inputValue => inputValue * 10000,
+            'Pa': inputValue => inputValue * 10000000,
+            'MPa': inputValue => inputValue * 0.001,
+            'kN/mm2': inputValue => inputValue * 0.001,
+            'kgf/m2': inputValue => inputValue * 10197200, // 추가
+            'kgf/mm2': inputValue => inputValue * 101.972, // 추가
+            'kPa': inputValue => inputValue * 10000, // 추가
+            'N/mm2': inputValue => inputValue * 10000 // 추가
+        },
+        'kN/mm2': {
+            'kgf/cm2': inputValue => inputValue * 10197.2,
+            'N/m2': inputValue => inputValue * 1000000000,
+            'N/cm2': inputValue => inputValue * 1000000,
+            'Pa': inputValue => inputValue * 1000000000,
+            'MPa': inputValue => inputValue * 1000,
+            'kN/cm2': inputValue => inputValue * 1000,
+            'kgf/m2': inputValue => inputValue * 10197200000, // 추가
+            'kgf/mm2': inputValue => inputValue * 101972, // 추가
+            'kPa': inputValue => inputValue * 1000000, // 추가
+            'N/mm2': inputValue => inputValue * 1000000000 // 추가
+        },
+
+        'kgf/m2': {
+            'kgf/cm2': inputValue => inputValue * 0.0000001,
+            'N/m2': inputValue => inputValue * 0.00980665,
+            'N/cm2': inputValue => inputValue * 0.00000980665,
+            'Pa': inputValue => inputValue * 0.00980665,
+            'MPa': inputValue => inputValue * 0.00000000980665,
+            'kN/cm2': inputValue => inputValue * 0.00000980665,
+            'kN/mm2': inputValue => inputValue * 0.00000000980665,
+            'kgf/mm2': inputValue => inputValue * 1e-8,
+            'kPa': inputValue => inputValue * 0.00980665,
+            'N/mm2': inputValue => inputValue * 0.00980665e-6,
+            'kgf/m2': inputValue => inputValue
+        },
+
+        'kgf/mm2': {
+            'kgf/cm2': inputValue => inputValue * 0.001,
+            'N/m2': inputValue => inputValue * 98.0665,
+            'N/cm2': inputValue => inputValue * 0.0980665,
+            'Pa': inputValue => inputValue * 98066.5,
+            'MPa': inputValue => inputValue * 0.0980665,
+            'kN/cm2': inputValue => inputValue * 0.0980665,
+            'kN/mm2': inputValue => inputValue * 0.0000980665,
+            'kgf/m2': inputValue => inputValue * 0.00000001,
+            'kPa': inputValue => inputValue * 98.0665,
+            'N/mm2': inputValue => inputValue * 0.0980665,
+            'kgf/mm2': inputValue => inputValue
+        },
+        'kPa': {
+            'kgf/cm2': inputValue => inputValue * 0.0980665,
+            'N/m2': inputValue => inputValue * 0.001,
+            'N/cm2': inputValue => inputValue * 0.0001,
+            'Pa': inputValue => inputValue * 1,
+            'MPa': inputValue => inputValue * 0.001,
+            'kN/cm2': inputValue => inputValue * 0.001,
+            'kN/mm2': inputValue => inputValue * 0.000001,
+            'kgf/m2': inputValue => inputValue * 0.0000101972,
+            'kgf/mm2': inputValue => inputValue * 0.000000101972,
+            'N/mm2': inputValue => inputValue * 0.001,
+            'kPa': inputValue => inputValue
+        },
+        'N/mm2': {
+            'kgf/cm2': inputValue => inputValue * 0.0000101972,
+            'N/m2': inputValue => inputValue * 1000000,
+            'N/cm2': inputValue => inputValue * 1000,
+            'Pa': inputValue => inputValue * 1000000,
+            'MPa': inputValue => inputValue * 0.001,
+            'kN/cm2': inputValue => inputValue * 1,
+            'kN/mm2': inputValue => inputValue * 0.001,
+            'kgf/m2': inputValue => inputValue * 0.00000000101972,
+            'kgf/mm2': inputValue => inputValue * 0.0000000101972,
+            'kPa': inputValue => inputValue * 0.001,
+            'N/mm2': inputValue => inputValue
+        }
+    };
+
+
+    outputUnit = unit;
+    const convertedValue = conversions[inputUnit][outputUnit];
+    const formattedValue = parseFloat(convertedValue(inputValue).toFixed(6)).toString();
+    document.getElementById("outputValue").value = formattedValue.includes('.') ? formattedValue.replace(/\.?0*$/, '') : formattedValue;
+    document.getElementById("selectedOutputUnit").textContent = unit;
+
+    const resultBtns = document.querySelectorAll(".result-box button");
+    resultBtns.forEach(btn => {
+        btn.style.backgroundColor = '';
+    });
+    lastClickedResultUnitBtn = document.getElementById(unit + "ResultBtn");
+    if (lastClickedResultUnitBtn) {
+        lastClickedResultUnitBtn.style.backgroundColor = 'orange';
+    }
+}
+
+document.getElementById("inputValue").addEventListener("input", function () {
+    inputValue = parseFloat(this.value);
+    convertTo(outputUnit);
+});
+
+
+
+
+// 계산기 관련 JavaScript 코드
+let expression = '';
+
+document.addEventListener('DOMContentLoaded', function() {
+    let keyboardEnabled = true; // 키보드 이벤트 리스너 상태
+
+    // 키보드 이벤트 리스너 등록
+    document.addEventListener('keydown', function(event) {
+        if (keyboardEnabled) { // 키보드 리스너가 활성화된 경우에만 동작
+            // 숫자키와 소수점만 처리 (0-9, .)
+            if ((event.key >= '0' && event.key <= '9') || event.key === '.') {
+                appendToDisplay(event.key);
+            } else if (event.key === '+' || event.key === '-' || event.key === '*' || event.key === '/' || event.key === '^') {
+                appendToDisplay(event.key);
+            } else if (event.key === 'Enter') {
+                calculateResult();
+            } else if (event.key === 'Backspace') {
+                clearEntry();
+            }
+
+        }
+    });
+
+    // 다른 요소에 포커스가 이동될 때 이벤트 리스너 등록
+    document.addEventListener('focusin', function(event) {
+        // 계산기의 입력 상자에 포커스가 있는지 확인
+        const calculatorInput = document.getElementById('result');
+        if (event.target !== calculatorInput) { // 계산기의 입력 상자에 포커스가 없는 경우
+            keyboardEnabled = false; // 키보드 리스너 비활성화
+        } else {
+            keyboardEnabled = true; // 포커스가 계산기의 입력 상자에 있을 때만 키보드 리스너 활성화
+        }
+    });
+
+    // 페이지 클릭 이벤트 리스너 등록
+    document.addEventListener('click', function(event) {
+        // 포커스가 변경될 때마다 키보드 이벤트 리스너의 상태 확인하여 키패드 활성화
+        const calculatorInput = document.getElementById('result');
+        if (document.activeElement === calculatorInput) {
+            keyboardEnabled = true;
+        }
+    });
+});
+
+
+// 계산기 입력창에 값을 추가하는 함수
+function appendToDisplay(value) {
+    const display = document.getElementById('result');
+    const currentValue = display.value;
+
+    if (value === '%') {
+        try {
+            const result = eval(currentValue + '/100'); // 입력된 값에 100으로 나눈 결과 계산
+            display.value = result; // 결과 표시
+            expression = result.toString(); // expression에 결과를 저장하여 연속 계산 가능하도록 함
+        } catch (error) {
+            alert('Invalid expression!'); // 오류 메시지 표시
+            clearDisplay(); // 입력창 초기화
+        }
+    } else {
+        if (currentValue === '') {
+            // 입력창이 비어있는 경우에는 새로운 값을 입력
+            expression = value;
+        } else {
+            // 이미 값이 있는 경우에는 기존 값 뒤에 새로운 값을 추가
+            expression += value;
+        }
+        // X^2 또는 sqrt2 버튼을 눌렀을 때 이전 값으로 연속해서 계산할 수 있도록 함
+        if (value === 'square') {
+            expression = '(' + currentValue + ')^2';
+        } else if (value === 'sqrt2') {
+            expression = 'sqrt(' + currentValue + ')';
+        }
+    }
+    display.value = expression; // 입력창에 표시
+}
+
+// 계산기 입력창의 값을 제곱하는 함수
+function square() {
+    try {
+        const base = eval(expression); // 입력된 값 저장
+        expression = '(' + base + ')^2'; // 중간 과정 표시
+        const result = base ** 2; // 제곱 계산
+        document.getElementById('result').value = result; // 결과 표시
+        addToHistory(expression + ' = ' + result); // 히스토리에 추가
+        expression = result; // 중간 과정 초기화 후 결과를 새로운 expression으로 설정
+    } catch (error) {
+        alert('Invalid expression!'); // 오류 메시지 표시
+        clearDisplay(); // 입력창 초기화
+    }
+}
+
+// 계산기 입력창의 값을 2로 나눈 제곱근을 계산하는 함수
+function sqrt2() {
+    try {
+        const base = eval(expression); // 입력된 값 저장
+        const result = Math.sqrt(base); // 제곱근 계산
+        expression = 'sqrt(' + base + ')'; // 중간 과정 표시
+        document.getElementById('result').value = result; // 결과 표시
+        addToHistory(expression + ' = ' + result); // 히스토리에 추가
+        expression = result; // 중간 과정 초기화 후 결과를 새로운 expression으로 설정
+    } catch (error) {
+        alert('Invalid expression!'); // 오류 메시지 표시
+        clearDisplay(); // 입력창 초기화
+    }
+}
+
+// X^Y를 계산하는 함수
+function powerXY() {
+    try {
+        const base = eval(expression); // 입력된 값 저장
+        expression = '(' + base + ')**'; // 중간 과정 표시
+        document.getElementById('result').value = expression; // 입력창에 표시
+    } catch (error) {
+        alert('Invalid expression!'); // 오류 메시지 표시
+        clearDisplay(); // 입력창 초기화
+    }
+}
+
+
+// % 버튼을 누를 때의 동작을 정의하는 함수
+function addPercentageToHistory() {
+    const display = document.getElementById('result');
+    const currentValue = display.value;
+
+    try {
+        const result = eval(currentValue + '/100'); // 입력된 값에 100으로 나눈 결과 계산
+        addToHistory(currentValue + '% = ' + result); // 히스토리에 추가
+    } catch (error) {
+        alert('Invalid expression!'); // 오류 메시지 표시
+        clearDisplay(); // 입력창 초기화
+    }
+}
+
+// 계산 결과를 계산기 입력창에 표시하고 히스토리에 추가하는 함수
+function calculateResult() {
+    try {
+        let result = eval(expression); // 계산 결과 계산
+        const historyElement = document.getElementById('history');
+        const expressionToDisplay = expression + ' = ' + result; // 계산식과 결과를 합쳐서 표시
+        expression = ''; // 계산식 초기화
+        document.getElementById('result').value = result; // 결과 표시
+        if (historyElement.innerHTML !== '') {
+            historyElement.innerHTML += '<br>';
+        }
+        historyElement.innerHTML += expressionToDisplay; // 히스토리에 추가
+        expression = result.toString(); // 계산 결과를 다시 expression에 할당하여 연속 계산 가능하도록 함
+    } catch (error) {
+        alert('Invalid expression!'); // 오류 메시지 표시
+        clearDisplay(); // 입력창 초기화
+    }
+}
+
+
+// 계산기 입력창을 지우는 함수
+function clearDisplay() {
+    expression = ''; // 식 초기화
+    document.getElementById('result').value = ''; // 입력창 지우기
+}
+
+// 계산기 입력창의 마지막 문자를 지우는 함수
+function clearEntry() {
+    expression = expression.slice(0, -1); // 마지막 문자 제거
+    document.getElementById('result').value = expression; // 입력창 갱신
+}
+
+// 계산기 입력창의 값에 1을 더하는 함수
+function reciprocal() {
+    try {
+        const result = eval('1 / (' + expression + ')'); // 1을 입력된 값으로 나눈 결과 계산
+        document.getElementById('result').value = result; // 결과 표시
+        addToHistory('1 / (' + expression + ') = ' + result); // 히스토리에 추가
+        expression = result.toString(); // expression에 결과를 저장하여 연속 계산 가능하도록 함
+    } catch (error) {
+        alert('Invalid expression!'); // 오류 메시지 표시
+        clearDisplay(); // 입력창 초기화
+    }
+}
+
+// 계산기 입력창의 마지막 문자를 지우는 함수
+function backspace() {
+    expression = expression.substring(0, expression.length - 1); // 마지막 문자 제거
+    document.getElementById('result').value = expression; // 입력창 갱신
+}
+
+// 계산기 입력창을 초기화하는 함수
+function clearDisplay() {
+    expression = '';
+    document.getElementById('result').value = '';
+}
+
+// 계산기 입력창의 마지막 항목을 삭제하는 함수 (CE 버튼 기능)
+function clearEntry() {
+    expression = expression.slice(0, -1);
+    document.getElementById('result').value = expression;
+}
+
+// 계산기의 히스토리에 계산식과 결과를 추가하는 함수
+function addToHistory(entry) {
+    const historyElement = document.getElementById('history');
+    if (historyElement.innerHTML !== '') {
+        historyElement.innerHTML += '<br>';
+    }
+    historyElement.innerHTML += entry;
+}
+
+
+
+
+
+<!--// textarea의 높이를 자동으로 조절하는 함수-->
+<!--function autoResizeTextarea(event) {-->
+<!--    const textarea = event.target;-->
+<!--    textarea.style.height = 'auto';-->
+<!--    textarea.style.height = textarea.scrollHeight + 'px';-->
+<!--}-->
+
+<!--// 페이지 로드 시 textarea의 높이를 자동으로 조절-->
+<!--window.addEventListener('load', function() {-->
+<!--    const textareas = document.querySelectorAll('textarea');-->
+<!--    textareas.forEach(textarea => {-->
+<!--        textarea.style.height = '200px'; // 초기 높이 설정-->
+<!--    });-->
+<!--});-->
+
+<!--// textarea에 입력할 때마다 높이를 자동으로 조절-->
+<!--document.addEventListener('input', function(event) {-->
+<!--    if (event.target.tagName.toLowerCase() === 'textarea') {-->
+<!--        autoResizeTextarea(event);-->
+<!--    }-->
+<!--});-->
+
+<!--// 엔터 키를 누를 때마다 textarea의 높이를 자동으로 조절-->
+<!--document.addEventListener('keydown', function(event) {-->
+<!--    if (event.key === 'Enter' && event.target.tagName.toLowerCase() === 'textarea') {-->
+<!--        autoResizeTextarea(event);-->
+<!--    }-->
+<!--});-->
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,825 @@
+{% extends 'base.html' %}
+{% load boardb_filter %}
+{% block content %}
+
+<h5 class="border-bottom pb-2 mb-3">Animal face test</h5>
+
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!--    <meta http-equiv="X-UA-Compatible" content="ie=edge">-->
+<!--    <link href="https://fonts.googleapis.com/css?family=Jua&display=swap" rel="stylesheet">-->
+<!--    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">-->
+<!--    <title>동물상 테스트</title>-->
+<!--    <meta name="title" content="동물상 테스트">-->
+<!--    <meta name="subject" content="얼굴로 보는 인공지능 동물상 테스트, 나와 닮은 동물상을 찾아보세요!">-->
+<!--    <meta name="keywords" content="동물상 테스트, 인공지능 동물상 테스트, 얼굴상, 얼굴상 테스트, 나와 닮은 동물, 동물상 찾기, 얼굴로 보는 동물상, 얼굴 동물, 동물얼굴, animalface, 강아지상, 고양이상, 여우상, 사슴상, 토끼상, 곰상, 공룡상, 인공지능 동물상, AI 얼굴상, AI 동물상">-->
+<!--    <meta name="author" content="조코딩">-->
+<!--    <link rel="stylesheet" href="style.css">-->
+<!--    <link rel="canonical" href="https://animalface.site" />-->
+<!--    <meta property="og:url" content="https://animalface.site" />-->
+<!--    <meta property="og:type" content="website" />-->
+<!--    <meta property="og:title" content="동물상 테스트" />-->
+<!--    <meta property="og:description" content="얼굴로 보는 인공지능 동물상 테스트, 나와 닮은 동물상을 찾아보세요! 대표 동물상 연예인 사진 데이터로 학습한 인공지능이 나의 얼굴로 동물상과 특징을 찾아드립니다. 회원가입도 필요없이 화면에서 바로 확인해보세요! 사진 데이터는 그 어디에도 전송되지 않습니다. 인공지능이 보는 나의 동물상 테스트 한번 해보세요! 강아지상? 고양이상? 여우상? 사슴상? 토끼상? 곰상? 공룡상? 얼굴상 테스트를 통해 나와 닮은 동물 찾기를 할 수 있습니다."-->
+<!--    />-->
+<!--    <meta property="og:image" content="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fk.kakaocdn.net%2Fdn%2Fc0eq42%2FbtqCQpiFhFn%2F8KPaOP9q8PXpJFRL7if55K%2Fimg.jpg" />-->
+<!--    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">-->
+<!--    <link rel="icon" href="/favicon.ico" type="image/x-icon">-->
+    <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-5e64b3727e862b06"></script>
+<!--    &lt;!&ndash; Global site tag (gtag.js) - Google Analytics &ndash;&gt;-->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-145482737-6"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+        gtag('config', 'UA-145482737-6');
+    </script>
+<!--</head>-->
+
+<style>
+body {
+  font-family: 'Jua', sans-serif;
+  background-color: #ffffff;
+  box-sizing: border-box;
+  color: #35465d;
+}
+.file-upload {
+    padding: 15% 3%;
+    margin: 0 auto;
+    border-radius: 10px;
+    border: solid 1.5px #f6f7fa;
+    background-color: #f6f7fa;
+}
+.file-upload-btn {
+  width: 100%;
+  margin: 0;
+  color: #fff;
+  background: #1FB264;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  border-bottom: 4px solid #15824B;
+  transition: all .2s ease;
+  outline: none;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.file-upload-btn:hover {
+  background: #1AA059;
+  color: #ffffff;
+  transition: all .2s ease;
+  cursor: pointer;
+}
+
+.file-upload-btn:active {
+  border: 0;
+  transition: all .2s ease;
+}
+
+.file-upload-content {
+  display: none;
+  text-align: center;
+}
+#loading {
+  display: none;
+}
+
+.file-upload-input {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.image-upload-wrap {
+    width: 60%;
+    margin: 0 auto;
+    position: relative;
+    object-fit: contain;
+    border-radius: 10px;
+    border: dashed 1.5px #35465d;
+    background-color: #ffffff;
+}
+
+.image-dropping,
+.image-upload-wrap:hover {
+    background-color: #35465d82;
+    border: 1.5px dashed #ffffff;
+}
+
+.image-title-wrap {
+  padding: 0 15px 15px 15px;
+  color: #222;
+}
+
+.drag-text {
+  text-align: center;
+}
+
+.drag-text h3 {
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.file-upload-image {
+  max-height: 60%;
+  max-width: 60%;
+  margin: auto;
+  padding: 10px;
+}
+
+.try-again-btn {
+  border-radius: 40px;
+  border: solid 1.5px #35465d;
+  background-color: #35465d;
+}
+
+.try-again-text {
+  display: block;
+  font-size: 1.5rem;
+  text-align: center;
+  color: #ffffff;
+  padding: 4px 15px;
+}
+
+.remove-image:hover {
+  background: #c13b2a;
+  color: #ffffff;
+  transition: all .2s ease;
+  cursor: pointer;
+}
+
+.remove-image:active {
+  border: 0;
+  transition: all .2s ease;
+}
+
+.navbar-light .navbar-brand {
+  line-height: 1.68;
+  text-align: left;
+  color: #35465d;
+}
+
+.navbar-light .navbar-toggler {
+    border-color: #ffffff;
+}
+
+.section {
+    margin-top: 50px;
+}
+
+.title {
+  line-height: 1.67;
+  text-align: center;
+  color: #35465d;
+}
+
+.subtitle {
+  line-height: 1.53;
+  text-align: center;
+  color: #35465d;
+}
+
+h5.border-bottom {
+   margin-top: 20px; /* 원하는 만큼의 위쪽 마진을 설정하세요 */
+}
+
+
+/* On screens that are 600px or less, set the background color to olive */
+@media screen and (max-width: 600px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.upload {
+    width: 20%;
+}
+
+.upload-text {
+    width: 55%;
+    font-size: 1rem;
+    line-height: 1.53;
+    text-align: center;
+    color: #35465d;
+    margin: 0 auto;
+}
+
+.footer {
+    background-color: initial;
+    color: initial;
+}
+
+.bar-container {
+  height: 2.7rem;
+}
+.dinosaur-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  width: 100%;
+  background-color: rgba(117, 204, 84, 0.2);
+}
+.dinosaur-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  background-color: rgba(117, 204, 84, 1);
+}
+.deer-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  width: 100%;
+  background-color: rgba(117, 204, 84, 0.2);
+}
+.deer-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  background-color: rgba(117, 204, 84, 1);
+}
+.dog-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  width: 100%;
+  background-color: rgba(27, 175, 234, 0.2);
+}
+.dog-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  background-color: rgba(27, 175, 234, 1);
+}
+.cat-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  width: 100%;
+  background-color: rgba(251, 176, 59, 0.2);
+}
+.cat-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  background-color: rgba(251, 176, 59, 1);
+}
+.bear-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  width: 100%;
+  background-color: rgba(195, 140, 102, 0.2);
+}
+.bear-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  background-color: rgba(195, 140, 102, 1);
+}
+.fox-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  width: 100%;
+  background-color: rgba(49, 132, 155, 0.2);
+}
+.fox-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  background-color: rgba(49, 132, 155, 1);
+}
+.rabbit-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  width: 100%;
+  background-color: rgba(235, 166, 190, 0.2);
+}
+.rabbit-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2rem;
+  border-radius: 10px;
+  background-color: rgba(235, 166, 190, 1);
+}
+.percent-text {
+  font-size: 1rem;
+  color: #333;
+}
+.animal-label {
+    width: 50%;
+    text-align: left;
+    height: 1rem;
+}
+#label-container {
+    width: 80%;
+    margin: 0 auto;
+}
+.result-message {
+    font-size: 1rem;
+    text-align: left;
+}
+
+
+.animal-explain {
+    font-size: 1.0rem;
+}
+.dinosaur-animal-title {
+    color: #3ba363;
+}
+.dinosaur-animal-celeb {
+    color: #3ba363;
+    font-size: 1.2rem;
+}
+.deer-animal-title {
+    color: #3ba363;
+}
+.deer-animal-celeb {
+    color: #3ba363;
+    font-size: 1.2rem;
+}
+.cat-animal-title {
+    color: #ff6c0a;
+}
+.cat-animal-celeb {
+    color: #ff6c0a;
+    font-size: 1.2rem;
+}
+.dog-animal-title {
+    color: #548dd4;
+}
+.dog-animal-celeb {
+    color: #548dd4;
+    font-size: 1.2rem;
+}
+.rabbit-animal-title {
+    color: #e56995;
+}
+.rabbit-animal-celeb {
+    color: #e56995;
+    font-size: 1.2rem;
+}
+.bear-animal-title {
+    color: #9b6b43;
+}
+.bear-animal-celeb {
+    color: #9b6b43;
+    font-size: 1.2rem;
+}
+.fox-animal-title {
+    color: #31849b;
+}
+.fox-animal-celeb {
+    color: #31849b;
+    font-size: 1.2rem;
+}
+
+/* gender */
+input#gender {
+  display: none;
+}
+
+label {
+  cursor: pointer;
+  display: inline-block;
+  width: 90px;
+  height: 41px;
+  box-shadow: 0 0 0 8px #e5e9ea inset;
+  border-radius: 30px;
+  position: relative;
+}
+
+.knob {
+  position: absolute;
+  width: 41px;
+  top: 0;
+  left: 0;
+  height: 41px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 8px #f470a7 inset;
+  background-color: #fbd4e6;
+  transition: 0.3s;
+}
+
+.knob > i {
+  position: absolute;
+  width: 4px;
+  height: 18px;
+  top: 100%;
+  background-color: #f470a7;
+  left: calc(50% - 2px);
+}
+
+.knob > i:before,
+.knob > i:after {
+  width: 6px;
+  position: absolute;
+  top: 42%;
+  content: "";
+  height: 4px;
+  background-color: #f470a7;
+}
+
+.knob > i:before {
+  left: 4px;
+}
+.knob > i:after {
+  left: -6px;
+}
+
+input:checked + label > .knob {
+  box-shadow: 0 0 0 8px #a1c6dd inset;
+  background-color: #e2ecf4;
+  transform: translateX(49px) rotate(-140deg);
+}
+
+input:checked + label > .knob > i {
+  background-color: #a1c6dd;
+}
+
+input:checked + label > .knob > i:after,
+input:checked + label > .knob > i:before {
+  background-color: #a1c6dd;
+}
+
+input:checked + label > .knob > i:after {
+  top: 14.5px;
+  width: 12px;
+  left: -7px;
+  transform: rotate(45deg);
+}
+input:checked + label > .knob > i:before {
+  top: 13px;
+  width: 12px;
+  left: 0px;
+  transform: rotate(134deg);
+}
+
+</style>
+
+    <section class="section">
+        <h1 class="title">Animal face test</h1>
+        <h2 class="subtitle">Ai Face-Based Animal Face Test</h2>
+        <h2 class="sr-only">Discover My Animal Persona: Take the Animal Face Test Based on My Face!</h2>
+<!--        <h3 class="sr-only">대표 동물상 연예인 사진 데이터로 학습한 인공지능이 나의 얼굴로 동물상과 특징을 찾아드립니다.</h3>-->
+<!--        <h4 class="sr-only">본 서비스는 Google의 인공지능 teachable machine 2.0을 활용하였습니다.</h4>-->
+<!--        <p class="sr-only">얼굴로 보는 인공지능 동물상 테스트, 나와 닮은 동물상을 찾아보세요! 대표 동물상 연예인 사진 데이터로 학습한 인공지능이 나의 얼굴로 동물상과 특징을 찾아드립니다. 회원가입도 필요없이 화면에서 바로 확인해보세요! 사진 데이터는 그 어디에도 전송되지 않습니다. 인공지능이 보는 나의 동물상 테스트 한번 해보세요! 강아지상? 고양이상? 여우상? 사슴상? 토끼상? 곰상? 공룡상? 얼굴상 테스트를 통해 나와 닮은 동물 찾기를 할 수 있습니다.</p>-->
+    </section>
+    </section>
+    <h3 class="pb-2 d-flex justify-content-center">Please choose your gender</h3>
+    <section class="d-flex justify-content-center">
+        <p class="d-flex align-items-center pr-3">Woman</p>
+        <div>
+            <input type="checkbox" id="gender">
+            <label for="gender">
+                <span class="knob">
+                    <i></i>
+                </span>
+            </label>
+        </div>
+        <p class="d-flex align-items-center pl-3">Man</p>
+    </section>
+<script class="jsbin" src="https://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+    <div class="mt-3 container file-upload">
+        <div class="image-upload-wrap">
+            <input class="file-upload-input" type='file' onchange="readURL(this);" accept="image/*" />
+            <div class="drag-text">
+<!--                <img src="img/upload.svg" class="mt-5 pt-5 upload">-->
+                <div style="display: flex; justify-content: center; margin-top: 20px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="currentColor" class="bi bi-cloud-arrow-up" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M7.646 5.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 6.707V10.5a.5.5 0 0 1-1 0V6.707L6.354 7.854a.5.5 0 1 1-.708-.708z"/>
+                        <path d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383m.653.757c-.757.653-1.153 1.44-1.153 2.056v.448l-.445.049C2.064 6.805 1 7.952 1 9.318 1 10.785 2.23 12 3.781 12h8.906C13.98 12 15 10.988 15 9.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 4.825 10.328 3 8 3a4.53 4.53 0 0 0-2.941 1.1z"/>
+                    </svg>
+                </div>
+                <h3 class="mb-5 pb-5 pt-4  upload-text">Upload a picture of your face by posting or pressing it!</h3>
+            </div>
+        </div>
+        <div class="file-upload-content">
+            <img class="file-upload-image" id="face-image" src="#" alt="your image" />
+            <div id="loading" class="animated bounce">
+                <div class="spinner-border" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+                <p class="text-center">AI is analyzing your animal image.</p>
+            </div>
+            <p class="result-message"></p>
+            <div id="label-container" class="d-flex flex-column justify-content-around"></div>
+            <div id="addThis" class="addthis_inline_share_toolbox_6lz1"></div>
+
+            <div class="pt-3 image-title-wrap">
+                <button type="button p-2" class="try-again-btn" onclick="retryUpload();" data-toggle="modal" data-target="#adModal">
+                    <span class="try-again-text">Retry with Another Photo</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- <div id="coupang" class="container d-flex justify-content-center">
+        <script src="https://ads-partners.coupang.com/g.js"></script>
+        <script>
+            new PartnersCoupang.G({
+                "id": 141621,
+                "subId": null
+            });
+        </script>
+    </div> -->
+
+<script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+    <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+
+    <footer class="footer pt-5 container d-flex justify-content-center">
+        <div>
+
+<!--
+        <ul class="list-inline d-flex justify-content-center">
+            <li class="list-inline-item">
+                <a href="https://developerdk.tistory.com/46">Privacy</a>
+            </li>
+            <li class="list-inline-item">
+                <a href="https://developerdk.tistory.com/47">Terms</a>
+            </li>
+            <li class="list-inline-item">
+                <a href="https://www.youtube.com/channel/UCQNE2JmbasNYbjGAcuBiRRg">FAQ</a>
+            </li>
+        </ul>
+-->
+        </div>
+    </footer>
+    <!-- Modal -->
+    <div class="modal fade" id="adModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+
+                    <!-- 텍스트 추가 -->
+                    <p> WELCOME, PYCONVERTER! </p>
+                </div>
+                <div class="modal-footer d-flex justify-content-center">
+                    <button type="button p-2" class="try-again-btn" onclick="gaReload();">
+                        <span class="try-again-text">Retry with Another Photo</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function gaReload() {
+            location.reload(); // Reload the page
+        }
+    </script>
+
+    <script>
+        (function() {
+        var d = document,
+            s = d.createElement('script');
+        s.src = 'https://jocoding.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the
+        <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+    </noscript>
+<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+    <script>
+        function readURL(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    $('.image-upload-wrap').hide();
+                    $('#loading').show();
+                    $('.file-upload-image').attr('src', e.target.result);
+                    $('.file-upload-content').show();
+                    $('.image-title').html(input.files[0].name);
+                };
+                reader.readAsDataURL(input.files[0]);
+                init().then(function() {
+                    console.log("hello");
+                    predict();
+                    $('#loading').hide();
+                });
+            } else {
+                removeUpload();
+            }
+        }
+
+        function removeUpload() {
+            $('.file-upload-input').replaceWith($('.file-upload-input').clone());
+            $('.file-upload-content').hide();
+            $('.image-upload-wrap').show();
+        }
+        $('.image-upload-wrap').bind('dragover', function() {
+            $('.image-upload-wrap').addClass('image-dropping');
+        });
+        $('.image-upload-wrap').bind('dragleave', function() {
+            $('.image-upload-wrap').removeClass('image-dropping');
+        });
+    </script>
+    <script type="text/javascript">
+        let URL;
+        const urlMale = "https://teachablemachine.withgoogle.com/models/o9D1N5TN/";
+        const urlFemale = "https://teachablemachine.withgoogle.com/models/bB3YHn5r/";
+        let model, webcam, labelContainer, maxPredictions;
+        async function init() {
+            if (document.getElementById("gender").checked) {
+                URL = urlMale;
+            } else {
+                URL = urlFemale;
+            }
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+            labelContainer = document.getElementById("label-container");
+            for (let i = 0; i < maxPredictions; i++) {
+                var element = document.createElement("div")
+                element.classList.add("d-flex");
+                labelContainer.appendChild(element);
+            }
+        }
+        async function predict() {
+            var image = document.getElementById("face-image")
+            const prediction = await model.predict(image, false);
+            prediction.sort((a, b) => parseFloat(b.probability) - parseFloat(a.probability));
+            console.log(prediction[0].className);
+            var resultTitle, resultExplain, resultCeleb;
+            if (document.getElementById("gender").checked) {
+                gtag('event', '동물상 테스트 수행', {
+                    'event_category': '동물상 테스트 수행',
+                    'event_label': '남자'
+                });
+                switch (prediction[0].className) {
+                    case "dog":
+                        resultTitle = "A cute puppy face"
+                        resultExplain = "Sweet and cute, you are the likable type that brings joy to everyone! With your kind and lively personality, you are popular everywhere, and you are especially lovely to your lovers because of your cuteness and laughter. You look like a puppy when you are a lover of a lover who becomes sullen and lonely when your lover lacks interest!"
+                        resultCeleb = "dog"
+                        gtag('event', '남자 결과 강아지상', {'event_category': '남자 결과'});
+                        break;
+                    case "cat":
+                        resultTitle = "a cold but charming cat face"
+                        resultExplain = "The first impression of being blunt may seem cold, but it is always popular because it has a strange charm. Although your pride is as good as No. 1 in the world, you like to get attention and are cute to your lover. You look like a cat who constantly makes your lover excited with a chic expression!"
+                        resultCeleb = "cat"
+                        gtag('event', '남자 결과 고양이상', {'event_category': '남자 결과'});
+                        break;
+                    case "rabbit":
+                        resultTitle = "an innocent rabbit face"
+                        resultExplain = "Innocent and cute, you are a happy virus that gives joy to people around you! Curious, active, cute, and pure appearance stimulates your lover's protective instinct. You are so lovely to your lover!"
+                        resultCeleb = "rabbit"
+                        gtag('event', '남자 결과 토끼상', {'event_category': '남자 결과'});
+                        break;
+                    case "dinosaur":
+                        resultTitle = "Warm Bad Guy Dinosaur face"
+                        resultExplain = "Your first impression is like a bad guy with a casual personality, but you're a charismatic man with a tough charm that you can't easily approach chic but can't get away with once you approach him."
+                        resultCeleb = "dinosaur"
+                        gtag('event', '남자 결과 공룡상', {'event_category': '남자 결과'});
+                        break;
+                    case "bear":
+                        resultTitle = "a bear of warm face"
+                        resultExplain = "Your first impression looks scary, but you're cute! You're a reliable person who takes care of your lover with meticulous and delicate personality! You're the best man with your cozy charm and dependability!"
+                        resultCeleb = "bear"
+                        gtag('event', '남자 결과 곰상', {'event_category': '남자 결과'});
+                        break;
+                    default:
+                        resultTitle = "Unknown"
+                        resultExplain = ""
+                        resultCeleb = ""
+                        gtag('event', '남자 결과 알수없음', {'event_category': '남자 결과'});
+                }
+            } else {
+                gtag('event', '동물상 테스트 수행', {
+                    'event_category': '동물상 테스트 수행',
+                    'event_label': '여자'
+                });
+                switch (prediction[0].className) {
+                    case "dog":
+                        resultTitle = "A cute puppy face"
+                        resultExplain = "Sweet and cute, you are the likable type that brings joy to everyone! With your kind and lively personality, you are popular everywhere, and you are especially lovely to your lovers because of your cuteness and laughter. You look like a puppy when you are a lover of a lover who becomes sullen and lonely when your lover lacks interest!"
+                        resultCeleb = "dog"
+                        gtag('event', '여자 결과 강아지상', {'event_category': '여자 결과'});
+                        break;
+                    case "cat":
+                        resultTitle = "a cold but charming cat face"
+                        resultExplain = "Chic and sexy, you always have a popular first impression, but you have a strange charm. Your pride is no less than No. 1 in the world, but you have a cute charm that loves attention and can act cute when you want to get attention from your lover. You are like a cat who constantly flutters her lover with a chic expression!"
+                        resultCeleb = "cat"
+                        gtag('event', '여자 결과 고양이상', {'event_category': '여자 결과'});
+                        break;
+                    case "rabbit":
+                        resultTitle = "A rabbit face with a fresh and lively"
+                        resultExplain = "You are a happy virus that gives joy to people around you! You are so curious that you stimulate your lover's protective instinct with your active, cute, and pure appearance. You are so lovely to your lover!"
+                        resultCeleb = "rabbit"
+                        gtag('event', '여자 결과 토끼상', {'event_category': '여자 결과'});
+                        break;
+                    case "deer":
+                        resultTitle = "a gentle and elegant deer face"
+                        resultExplain = "With a clear and bright atmosphere, you have a calm personality like a deer. Your eyes are your biggest trademark, and you have warm and gentle eyes, so you always retain your loveliness! You, who are shy and unfamiliar with expressing affection, are mysterious even to lovers, but you have the ability to capture their heart with a warm personality."
+                        resultCeleb = "deer"
+                        gtag('event', '여자 결과 사슴상', {'event_category': '여자 결과'});
+                        break;
+                    case "fox":
+                        resultTitle = "a sexy push-and-pull fox face"
+                        resultExplain = "You have a sexy charm that attracts people. In addition to your elegant appearance, you have a great sense of humor, and you are the main character who attracts attention everywhere! You have a social personality and actively express your affection to your lovers, but as a master of push and pull, you are a charming person who completely oozes the soul of your lover."
+                        resultCeleb = "fox"
+                        gtag('event', '여자 결과 여우상', {'event_category': '여자 결과'});
+                        break;
+                    default:
+                        resultTitle = "Unknown"
+                        resultExplain = ""
+                        resultCeleb = ""
+                        gtag('event', '여자 결과 알수없음', {'event_category': '여자 결과'});
+                }
+            }
+            var title = "<div class='" + prediction[0].className + "-animal-title'>" + resultTitle + "</div>"
+            var explain = "<div class='animal-explain pt-2'>" + resultExplain + "</div>"
+            var celeb = "<div class='" + prediction[0].className + "-animal-celeb pt-2 pb-2'>" + resultCeleb + "</div>"
+            $('.result-message').html(title + explain + celeb);
+            var barWidth;
+            for (let i = 0; i < maxPredictions; i++) {
+                if (prediction[i].probability.toFixed(2) > 0.1) {
+                    barWidth = Math.round(prediction[i].probability.toFixed(2) * 100) + "%";
+                } else if (prediction[i].probability.toFixed(2) >= 0.01) {
+                    barWidth = "4%"
+                } else {
+                    barWidth = "2%"
+                }
+                var labelTitle;
+                switch (prediction[i].className) {
+                    case "dog":
+                        labelTitle = "Dog"
+                        break;
+                    case "cat":
+                        labelTitle = "Cat"
+                        break;
+                    case "rabbit":
+                        labelTitle = "Rabbit"
+                        break;
+                    case "dinosaur":
+                        labelTitle = "Dinosaur"
+                        break;
+                    case "bear":
+                        labelTitle = "Bear"
+                        break;
+                    case "deer":
+                        labelTitle = "Deer"
+                        break;
+                    case "fox":
+                        labelTitle = "Fox"
+                        break;
+                    default:
+                        labelTitle = "Unknown"
+                }
+                var label = "<div class='animal-label d-flex align-items-center'>" + labelTitle + "</div>"
+                var bar = "<div class='bar-container position-relative container'><div class='" + prediction[i].className + "-box'></div><div class='d-flex justify-content-center align-items-center " + prediction[i].className + "-bar' style='width: " + barWidth + "'><span class='d-block percent-text'>" + Math.round(prediction[i].probability.toFixed(2) * 100) + "%</span></div></div>"
+                labelContainer.childNodes[i].innerHTML = label + bar;
+            }
+        }
+    </script>
+
+
+{% endblock %}

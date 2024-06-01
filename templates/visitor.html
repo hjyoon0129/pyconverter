@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visitor Count</title>
+    <style>
+        table {
+            width: 50%;
+            border-collapse: collapse;
+            margin: auto;
+        }
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: center;
+            padding: 8px;
+            font-size: 12px; /* 글꼴 크기 작게 설정 */
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .time-period {
+            font-weight: bold;
+        }
+
+        /* 미디어 쿼리: 768px 이하에서 테이블 너비를 100%로 설정 */
+        @media (max-width: 768px) {
+            table {
+                width: 100%;
+                margin-top: 10px; /* 테이블에 상단 마진 추가 */
+            }
+            /* 각 행의 높이 설정 */
+            tr {
+                height: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Day</th>
+                <th>Month</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="time-period">Visitor</td>
+                <td>{{ daily_count }}</td> <!-- Django에서 전달된 일간 방문자 수 연동 -->
+                <td>{{ monthly_count }}</td> <!-- Django에서 전달된 월간 방문자 수 연동 -->
+                <td>{{ total_count }}</td> <!-- Django에서 전달된 총 방문자 수 연동 -->
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

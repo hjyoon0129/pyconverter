@@ -1,0 +1,30 @@
+/* 전체 배경색을 흰색으로 설정합니다. */
+body {
+    background-color: white;
+}
+
+/* 테이블 헤더(th)를 선택하여 스타일을 적용합니다. */
+.table th {
+    color: white; /* 헤더 텍스트를 흰색으로 설정합니다. */
+    background-color: black; /* 헤더 배경색을 검정색으로 설정합니다. */
+    font-size: 1px; /* 글씨 크기를 조절합니다. */
+    height: 10px; /* 행 높이를 조절합니다. */
+    line-height: 30px; /* 텍스트 세로 중앙 정렬을 위해 line-height 속성 추가 */
+}
+/* 테이블의 행(td)을 선택하여 스타일을 적용합니다. */
+.table tbody td {
+    color: black; /* 목록 텍스트를 검정색으로 설정합니다. */
+    background-color: #f8f9fa; /* 배경색을 밝은 회색으로 설정합니다. */
+}
+
+/* 질문이 없을 때 표시되는 메시지를 선택하여 스타일을 적용합니다. */
+.table tbody tr td[colspan="3"] {
+    color: black; /* 텍스트를 검정색으로 설정합니다. */
+}
+
+/* 링크 색상을 파란색으로 변경합니다. */
+.table a {
+    color: red; /* 링크 텍스트를 파란색으로 설정합니다. */
+}
+
+

@@ -1,0 +1,53 @@
+<!--{% extends 'base.html' %}-->
+<!--{% block content %}-->
+<!--<div class="container">-->
+<!--    <h5 class="my-3 border-bottom pb-2">질문등록</h5>-->
+<!--    <form method="post" enctype="multipart/form-data">-->
+<!--        {% csrf_token %}-->
+<!--        &lt;!&ndash; 오류표시 Start &ndash;&gt;-->
+<!--        {% if form.errors %}-->
+<!--        <div class="alert alert-danger" role="alert">-->
+<!--            {% for field in form %}-->
+<!--            {% if field.errors %}-->
+<!--            <div>-->
+<!--                <strong>{{ field.label }}</strong>-->
+<!--                {{ field.errors }}-->
+<!--            </div>-->
+<!--            {% endif %}-->
+<!--            {% endfor %}-->
+<!--        </div>-->
+<!--        {% endif %}-->
+<!--        &lt;!&ndash; 오류표시 End &ndash;&gt;-->
+<!--        <div class="mb-3">-->
+<!--            <label for="subject" class="form-label">제목</label>-->
+<!--            <input type="text" class="form-control" name="subject" id="subject"-->
+<!--                   value="{{ form.subject.value|default_if_none:'' }}">-->
+<!--        </div>-->
+<!--        <div class="mb-3">-->
+<!--            <label for="content" class="form-label">내용</label>-->
+<!--            <textarea class="form-control" name="content"-->
+<!--                      id="content" rows="10">{{ form.content.value|default_if_none:'' }}</textarea>-->
+<!--        </div>-->
+
+<!--        <div class="mb-3">-->
+<!--            <label for="recommendation" class="form-label">아파트선택</label>-->
+<!--            <select class="form-select" name="recommendation" id="recommendation">-->
+<!--                <option value="1">호반베르디움 1차</option>-->
+<!--                <option value="2">호반베르디움 2차</option>-->
+<!--                <option value="3">호반베르디움 3차</option>-->
+<!--                <option value="4">호반베르디움 4차</option>-->
+<!--            </select>-->
+<!--        </div>-->
+
+
+
+<!--        &lt;!&ndash; 파일 업로드를 위한 필드 추가 &ndash;&gt;-->
+<!--        <div class="mb-3">-->
+<!--            <label for="image" class="form-label">이미지 업로드</label>-->
+<!--            <input type="file" class="form-control" name="image" id="image">-->
+<!--        </div>-->
+<!--        <button type="submit" class="btn btn-primary">저장하기</button>-->
+<!--    </form>-->
+
+<!--</div>-->
+<!--{% endblock %}-->

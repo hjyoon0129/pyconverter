@@ -1,0 +1,77 @@
+{% load static %}
+<!doctype html>
+<html lang="ko">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="naver-site-verification" content="743c03de66f707b24a8420f48386c5b170c58219" />
+    <meta name="google-site-verification" content="Fh1shrN17qbSjjBzL_enci2xFezGpGah2gQNXx1o8YQ" />
+
+    <meta name="title" content="Pyconverter">
+    <meta name="subject" content="Unit converter description: Length, Volume, Area, and Weight converter">
+    <meta name="keywords" content="miles to km, cm to inches, lbs to kg, inch to cm, cm to inch, pyconverter, kg to lbs, inches to cm, converter, mm to inches, mm to m, cm to feet, mm to cm, inch to mm, mile to km, feet to cm, km to miles, lb to kg, cm to m, cm to in, inches to feet, mm to inch, gallon to liter, mm to in, m to mm, inch to feet, inches to mm, unit conversion, meters to feet, conversion calculator, length converter, convert cm to inch">
+    <meta name="description" content="miles to km, cm to inches, lbs to kg, inch to cm, cm to inch, pyconverter, kg to lbs, inches to cm, converter, mm to inches, mm to m, cm to feet, mm to cm, inch to mm, mile to km, feet to cm, km to miles, lb to kg, cm to m, cm to in, inches to feet, mm to inch, gallon to liter, mm to in, m to mm, inch to feet, inches to mm, unit conversion, meters to feet, conversion calculator, length converter, convert cm to inch">
+    <meta name="author" content="Pyconverter">
+    <meta property="og:url" content="https://pyconverter.com" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Pyconverter" />
+    <meta property="og:description" content="Free online unit converter for length, volume, area, weight, and more" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+<!--    <meta property="og:image" content="https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fk.kakaocdn.net%2Fdn%2Fc0eq42%2FbtqCQpiFhFn%2F8KPaOP9q8PXpJFRL7if55K%2Fimg.jpg" />-->
+<!--    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">-->
+<!--    <link rel="icon" href="/favicon.ico" type="image/x-icon">-->
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" type="text/css" href="{% static 'bootstrap.min.css' %}">
+
+    <!-- head 부분에 추가 -->
+    <script src="https://kit.fontawesome.com/2b2d3311be.js" crossorigin="anonymous"></script>
+
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5198100418909507"
+     crossorigin="anonymous"></script>
+
+    <title>Hello, pyconverter!</title>
+</head>
+<body>
+
+    <!-- 네비게이션바 -->
+    {% include "navbar.html" %}
+
+ <div class="container mt-3" style="height: auto !important;">
+    <div class="row" style="height: auto !important;">
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 사이드바 -->
+            <div class="col-md-2">
+                {% include "sidebar.html" %}
+                {% include "visitor.html" %}
+
+            </div>
+
+            <!-- 메인 콘텐츠 영역 -->
+            <div class="col-md-9">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+    <!-- Bootstrap JS -->
+    <script src="{% static 'bootstrap.min.js' %}"></script>
+
+    <!-- 자바스크립트 -->
+    {% block script %}
+
+<style>
+@media (max-width: 768px) {
+    .visitor {
+        order: 3; /* visitor.html의 순서를 변경하여 맨 아래로 이동시킵니다. */
+    }
+}
+</style>
+{% endblock %}
