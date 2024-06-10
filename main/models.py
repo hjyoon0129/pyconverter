@@ -36,19 +36,24 @@ class Visitor(models.Model):
         # 오늘의 방문자 레코드 가져오기
         visitor, created = cls.objects.get_or_create(date=today)
 
-        # 방문자 수 업데이트
-        visitor.daily_count += 1
-        visitor.monthly_count += 1
-        visitor.total_count += 1
+        # 새로 고침할 때만 방문자 수 업데이트
+        if not request.session.get('visited_today'):
+            # 방문자 수 업데이트
+            visitor.daily_count += 1
+            visitor.monthly_count += 1
+            visitor.total_count += 1
 
-        # 만약 새로운 달이 시작되면 월별 카운트를 초기화
-        if today.day == 1:
-            cls.objects \
-                .filter(date__year=today.year, date__month=today.month) \
-                .update(monthly_count=0)
+            # 만약 새로운 달이 시작되면 월별 카운트를 초기화
+            if today.day == 1:
+                cls.objects \
+                    .filter(date__year=today.year, date__month=today.month) \
+                    .update(monthly_count=0)
 
-        # 데이터베이스에 변경사항 저장
-        visitor.save()
+            # 데이터베이스에 변경사항 저장
+            visitor.save()
+
+            # 방문 여부를 세션에 저장
+            request.session['visited_today'] = True
 
     @classmethod
     def get_daily_count(cls):
