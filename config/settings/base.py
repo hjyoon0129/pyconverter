@@ -32,6 +32,10 @@ ALLOWED_HOSTS = ['3.37.233.160','pyconverter.com']
 # Application definition
 
 INSTALLED_APPS = [
+    # 'facehair.apps.FacehairConfig',
+    'spilitpdf.apps.SpilitpdfConfig',
+    'mergepdf.apps.MergepdfConfig',
+    'pdf.apps.PdfConfig',
     'qna.apps.QnaConfig',
     'visitor.apps.VisitorConfig',
     'humor.apps.HumorConfig',

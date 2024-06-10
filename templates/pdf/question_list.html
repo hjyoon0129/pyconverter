@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load pdf_filter %}
+
+{% block content %}
+
+<head>
+    <meta charset="UTF-8">
+    <title>PDF Tools</title>
+    <style>
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .card {
+            width: 200px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            background-color: #fff;
+            cursor: pointer; /* 카드 전체를 클릭할 수 있도록 설정 */
+            transition: transform 0.3s, box-shadow 0.3s; /* 부드러운 호버 효과를 위한 트랜지션 */
+        }
+
+        .card img {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto;
+        }
+
+        .card-title {
+            margin-top: 10px;
+            font-size: 1.2rem;
+        }
+
+        .card:hover {
+            transform: scale(1); /* 호버 시 카드 크기 확대 */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 호버 시 그림자 효과 추가 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card" id="mergeCard">
+            <img src="path/to/merge-icon.png" alt="Merge PDF">
+            <h5 class="card-title">Merge PDF</h5>
+        </div>
+        <div class="card" id="splitCard">
+            <img src="path/to/split-icon.png" alt="Split PDF">
+            <h5 class="card-title">Split PDF</h5>
+        </div>
+        <div class="card" id="compressCard">
+            <img src="path/to/compress-icon.png" alt="Compress PDF">
+            <h5 class="card-title">Compress PDF</h5>
+        </div>
+        <div class="card" id="convertToWordCard">
+            <img src="path/to/word-icon.png" alt="Convert to Word">
+            <h5 class="card-title">PDF to Word</h5>
+        </div>
+        <div class="card" id="convertToPowerPointCard">
+            <img src="path/to/powerpoint-icon.png" alt="Convert to PowerPoint">
+            <h5 class="card-title">PDF to PPT</h5>
+        </div>
+        <div class="card" id="convertToExcelCard">
+            <img src="path/to/excel-icon.png" alt="Convert to Excel">
+            <h5 class="card-title">PDF to Excel</h5>
+        </div>
+        <div class="card" id="pdfToImageCard">
+            <img src="path/to/image-icon.png" alt="PDF to Image">
+            <h5 class="card-title">PDF to Image</h5>
+        </div>
+        <div class="card" id="imageToPdfCard">
+            <img src="path/to/pdf-icon.png" alt="Image to PDF">
+            <h5 class="card-title">Image to PDF</h5>
+        </div>
+        <div class="card" id="editPdfCard">
+            <img src="path/to/edit-icon.png" alt="Edit PDF">
+            <h5 class="card-title">Edit PDF</h5>
+        </div>
+        <div class="card" id="watermarkCard">
+            <img src="path/to/watermark-icon.png" alt="Watermark">
+            <h5 class="card-title">Watermark</h5>
+        </div>
+        <div class="card" id="unlockPdfCard">
+            <img src="path/to/unlock-icon.png" alt="Unlock PDF">
+            <h5 class="card-title">Unlock PDF</h5>
+        </div>
+        <div class="card" id="protectPdfCard">
+            <img src="path/to/protect-icon.png" alt="Protect PDF">
+            <h5 class="card-title">Protect PDF</h5>
+        </div>
+    </div>
+</body>
+<script>
+    document.getElementById('mergeCard').addEventListener('click', () => {
+        window.location.href = "/mergepdf/";
+    });
+
+    document.getElementById('splitCard').addEventListener('click', () => {
+        window.location.href = "/spilitpdf/";
+    });
+
+    document.getElementById('compressCard').addEventListener('click', () => {
+        // PDF 압축하기 작업을 수행하는 코드 작성
+    });
+
+    document.getElementById('convertToWordCard').addEventListener('click', () => {
+        // PDF를 Word로 변환하는 작업을 수행하는 코드 작성
+    });
+
+    document.getElementById('convertToPowerPointCard').addEventListener('click', () => {
+        // PDF를 PowerPoint로 변환하는 작업을 수행하는 코드 작성
+    });
+
+    document.getElementById('convertToExcelCard').addEventListener('click', () => {
+        // PDF를 Excel로 변환하는 작업을 수행하는 코드 작성
+    });
+
+    document.getElementById('pdfToImageCard').addEventListener('click', () => {
+        // PDF를 이미지로 변환하는 작업을 수행하는 코드 작성
+    });
+
+    document.getElementById('imageToPdfCard').addEventListener('click', () => {
+        // 이미지를 PDF로 변환하는 작업을 수행하는 코드 작성
+    });
+
+    document.getElementById('editPdfCard').addEventListener('click', () => {
+        // PDF를 편집하는 작업을 수행하는 코드 작성
+    });
+
+    document.getElementById('watermarkCard').addEventListener('click', () => {
+        // PDF에 워터마크 추가하는 작업을 수행하는 코드 작성
+    });
+
+    document.getElementById('unlockPdfCard').addEventListener('click', () => {
+        // PDF 잠금 해제하는 작업을 수행하는 코드 작성
+    });
+
+    document.getElementById('protectPdfCard').addEventListener('click', () => {
+        // PDF 보호하는 작업을 수행하는 코드 작성
+    });
+</script>
+{% endblock %}

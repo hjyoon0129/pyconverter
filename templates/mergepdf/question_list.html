@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+{% load mergepdf_filter %}
+
+{% block content %}
+
+
+<title>PDF Merge</title>
+<style>
+#fileList {
+    list-style-type: none;
+    padding: 0;
+}
+#fileList li {
+    margin: 5px 0;
+    padding: 5px;
+    border: 1px solid #ccc;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 20px; /* 라운드 모서리 적용 */
+}
+.fileInfo {
+    flex-grow: 1;
+}
+.fileControls {
+    display: flex;
+    align-items: center;
+}
+.arrowButton {
+    padding: 5px;
+    cursor: pointer;
+}
+
+.removeButton {
+    background-color: transparent;
+    border: none;
+    color: red;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+
+    #fileDropArea {
+width: 100%;
+height: 100%;
+border: 2px dashed #ccc;
+text-align: center;
+line-height: 200px;
+transition: background-color 0.3s;
+}
+
+#fileDropArea.drag-over {
+    background-color: #f0f0f0;
+}
+
+#fileInputContainer {
+/* 버튼 크기 조정 */
+width: 300px;
+height: 50px;
+/* 스타일 */
+background-color: #FF9900; /* 버튼 배경색 */
+color: black; /* 텍스트 색상 */
+border: none; /* 테두리 제거 */
+border-radius: 5px; /* 모서리 둥글게 */
+cursor: pointer; /* 커서를 포인터로 변경하여 클릭 가능한 상태로 변경 */
+display: flex; /* 내부 아이템을 가로로 정렬하기 위해 flex 사용 */
+justify-content: center; /* 가로로 중앙 정렬 */
+align-items: center; /* 세로로 중앙 정렬 */
+}
+
+/* 마우스 호버 시 색상 변경 */
+#fileInputContainer:hover {
+background-color: #E68900; /* 어두운 오렌지색으로 호버 시 변경 */
+}
+
+/* 파일 입력 상자 숨기기 */
+#fileInput {
+display: none;
+}
+
+</style>
+</head>
+<body>
+    <h1 style="font-weight: bold;">Merge PDF files</h1>
+    <input type="file" id="fileInput" accept=".pdf" multiple style="display: none;"> <!-- 기존 스타일 무시하고 숨기기 -->
+    <h4>- Combine PDFs in the order you want with the easiest PDF merger available</h4>
+    <h4>- You can drag and rearrange the merge order using your mouse</h4>
+    <label for="fileInput" id="fileInputContainer">Select PDF files</label>
+    <input type="file" id="fileInput" multiple>
+    <div class="tool__workarea__rendered" id="fileGroups" style="display: flex;"></div> <!-- 파일 그룹을 표시할 영역 -->
+
+
+
+    <ul id="fileList"></ul>
+    <button id="resetButton">Reset File List</button>
+    <button id="downloadButton" disabled>Download</button>
+    <div id="fileDropArea">
+    Drag and drop your files here
+    </div>
+    <a id="downloadLink" style="display: none;"></a>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+<script>
+let filesArray = [];
+let mergedPdfBytes;
+
+document.getElementById('fileInput').addEventListener('change', (event) => {
+    const files = Array.from(event.target.files);
+    filesArray = files;
+    updateFileList();
+});
+
+function createRemoveButton(index) {
+    const removeButton = document.createElement('button');
+    removeButton.textContent = 'X';
+    removeButton.classList.add('removeButton');
+    removeButton.addEventListener('click', () => {
+        // 파일 배열에서 해당 인덱스의 파일 제거
+        filesArray.splice(index, 1);
+        // 파일 목록 업데이트
+        updateFileList();
+    });
+    return removeButton;
+}
+
+
+function updateFileList() {
+    const fileList = document.getElementById('fileList');
+    fileList.innerHTML = '';
+
+    filesArray.forEach((file, index) => {
+        const listItem = document.createElement('li');
+        const fileInfo = document.createElement('div');
+        const fileNumber = document.createElement('span');
+        fileNumber.textContent = index + 1; // 숫자를 1부터 시작하도록 설정
+        fileInfo.appendChild(fileNumber);
+        fileInfo.classList.add('fileInfo');
+        fileInfo.textContent = `${index + 1}. ${file.name}`; // 파일 이름 앞에 번호 추가
+        const removeButton = createRemoveButton(index); // 파일 제거하기 버튼 생성
+        listItem.appendChild(fileInfo);
+        listItem.appendChild(removeButton); // 파일 제거하기 버튼 추가
+        fileList.appendChild(listItem);
+    });
+
+    $("#fileList").sortable({
+        axis: "y",
+        containment: "parent",
+        tolerance: "pointer",
+        update: function(event, ui) {
+            const reorderedFiles = [];
+            $('#fileList li').each(function(index) {
+                const originalIndex = $(this).index();
+                const file = filesArray[originalIndex];
+                const fileInfo = $(this).find('.fileInfo');
+                fileInfo.text(`${index + 1}. ${file.name}`);
+                reorderedFiles.push(file);
+            });
+            filesArray = reorderedFiles;
+        }
+    });
+
+    // 파일을 다시 불러올 때마다 다운로드 버튼의 활성화 여부 확인 및 설정
+    const downloadButton = document.getElementById('downloadButton');
+    downloadButton.disabled = filesArray.length === 0;
+}
+
+
+document.getElementById('resetButton').addEventListener('click', () => {
+    document.getElementById('fileInput').value = "";
+    filesArray = [];
+    updateFileList();
+    document.getElementById('downloadButton').disabled = true;
+});
+
+document.getElementById('downloadButton').addEventListener('click', async () => {
+    if (filesArray.length === 0) {
+        alert("PDF 파일을 선택해 주세요.");
+        return;
+    }
+
+    const pdfLib = window.PDFLib;
+    const mergedPdf = await pdfLib.PDFDocument.create();
+
+    for (const file of filesArray) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfLib.PDFDocument.load(arrayBuffer);
+        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+        copiedPages.forEach((page) => {
+            mergedPdf.addPage(page);
+        });
+    }
+
+    mergedPdfBytes = await mergedPdf.save();
+
+    const blob = new Blob([mergedPdfBytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = "merged.pdf";
+    downloadLink.click();
+
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+    }, 0);
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const downloadButton = document.getElementById('downloadButton');
+    const fileList = document.getElementById('fileList');
+
+    // 파일 목록이 변경될 때마다 다운로드 버튼을 활성화합니다.
+    fileList.addEventListener('change', () => {
+        downloadButton.disabled = false;
+    });
+
+    // 파일 순서가 변경될 때마다 다운로드 버튼을 활성화합니다.
+    Sortable.create(fileList, {
+        animation: 150,
+        onSort: () => {
+            downloadButton.disabled = false;
+        }
+    });
+});
+
+// 파일 드래그 앤 드롭 영역을 선택합니다.
+const dropArea = document.getElementById('fileDropArea');
+
+// 파일 드래그 이벤트를 처리합니다.
+dropArea.addEventListener('dragover', (event) => {
+    event.preventDefault(); // 기본 동작을 막습니다.
+    dropArea.classList.add('drag-over'); // 드래그 오버 스타일을 추가합니다.
+});
+
+// 드래그 이벤트가 끝났을 때 처리합니다.
+dropArea.addEventListener('dragleave', () => {
+    dropArea.classList.remove('drag-over'); // 드래그 오버 스타일을 제거합니다.
+});
+
+// 파일 드롭 이벤트를 처리합니다.
+dropArea.addEventListener('drop', (event) => {
+    event.preventDefault(); // 기본 동작을 막습니다.
+    dropArea.classList.remove('drag-over'); // 드래그 오버 스타일을 제거합니다.
+
+    // 드롭한 파일들을 가져옵니다.
+    const files = Array.from(event.dataTransfer.files);
+
+    // 파일을 처리하는 코드를 여기에 추가합니다.
+    handleDroppedFiles(files);
+});
+
+// 드롭한 파일들을 처리하는 함수를 정의합니다.
+function handleDroppedFiles(files) {
+    // 파일 처리 로직을 여기에 추가합니다.
+    // 예를 들어, filesArray 배열에 추가하고 파일 리스트를 업데이트할 수 있습니다.
+    filesArray.push(...files); // 기존 파일 배열에 추가합니다.
+    updateFileList(); // 파일 리스트를 업데이트합니다.
+}
+
+async function renderPDFPreview(file, canvasId) {
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js';
+
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(1); // 첫 번째 페이지를 가져옵니다.
+
+    const viewport = page.getViewport({ scale: 1 });
+    const canvas = document.getElementById(canvasId);
+    const context = canvas.getContext('2d');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    await page.render({
+        canvasContext: context,
+        viewport: viewport
+    }).promise;
+}
+
+// 파일 그룹의 캔버스에 PDF 파일의 미리보기를 렌더링합니다.
+const fileGroups = document.querySelectorAll('.tool__workarea__rendered .file');
+fileGroups.forEach((fileGroup, index) => {
+    const canvasId = `cover-${fileGroup.id}`;
+    const canvas = document.createElement('canvas');
+    canvas.id = canvasId;
+    canvas.classList.add('pdf');
+    fileGroup.querySelector('.file__canvas').appendChild(canvas);
+
+    const fileName = fileGroup.querySelector('.file__info__name').textContent;
+    const fileExtension = fileName.split('.').pop().toLowerCase();
+    if (fileExtension === 'pdf') {
+        const file = fileGroup.querySelector('.file__canvas canvas');
+        renderPDFPreview(file, canvasId);
+    }
+});
+
+</script>
+
+
+
+</html>
+
+{% endblock %}

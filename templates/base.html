@@ -68,10 +68,23 @@
     {% block script %}
 
 <style>
+.sidebar {
+    width: 200px; /* 사이드바 너비 */
+    background-color: #f4f4f4; /* 사이드바 배경색 */
+    height: 100%; /* 화면 전체 높이 */
+    padding: 20px;
+    box-sizing: border-box;
+    position: fixed; /* 사이드바를 고정 */
+    top: 0;
+    left: 0;
+    overflow-y: auto; /* 내용이 길어질 경우 스크롤바 표시 */
+}
 @media (max-width: 768px) {
     .visitor {
         order: 3; /* visitor.html의 순서를 변경하여 맨 아래로 이동시킵니다. */
     }
 }
+
+
 </style>
 {% endblock %}

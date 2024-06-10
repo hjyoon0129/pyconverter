@@ -1,0 +1,329 @@
+{% extends 'base.html' %}
+{% load spilitpdf_filter %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Split PDF file</title>
+    <style>
+        .file {
+            margin: 10px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .file__canvas {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            margin: 5px;
+        }
+        #fileGroups {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .page-number {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 12px;
+        }
+        #fileDropArea {
+            width: 100%;
+            height: 100%;
+            border: 2px dashed #ccc;
+            text-align: center;
+            line-height: 200px;
+            transition: background-color 0.3s;
+        }
+
+        #fileDropArea.drag-over {
+            background-color: #f0f0f0;
+        }
+
+    </style>
+</head>
+<body>
+    <h1 style="font-weight: bold;">Split PDF file</h1>
+    <h4>- Separate one page or a whole set for easy conversion into independent PDF files</h4>
+    <input type="file" id="fileInput" accept=".pdf" style="display: none;" multiple>
+    <button id="selectFilesButton">Select PDF file</button>
+    <button id="resetButton">Reset File List</button>
+    <button id="splitButton">Split PDF</button>
+    <label for="startPage">from Page:</label>
+    <input type="number" id="startPage" value="1" min="1" style="width: 50px;">
+    <label for="endPage">to Page:</label>
+    <input type="number" id="endPage" min="1" style="width: 50px;">
+
+    <div id="fileGroups"></div>
+    <div id="fileDropArea">
+        <p>Drag and drop your files here</p>
+    </div>
+    <a id="downloadLink" style="display: none;"></a>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+    <script src="script.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+
+<script>
+let filesArray = [];
+let pdfDocs = [];
+
+async function renderPDFPreview(file, canvasIdPrefix, startPage, endPage) {
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js';
+
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pageCount = pdf.numPages;
+
+    if (startPage === endPage) {
+        const renderPage = async (pageNum, canvasId) => {
+            const page = await pdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 0.5 });
+            const canvas = document.getElementById(canvasId);
+            const context = canvas.getContext('2d');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            await page.render({
+                canvasContext: context,
+                viewport: viewport
+            }).promise;
+        };
+
+        // 시작 페이지와 종료 페이지가 같을 때는 한 페이지만 렌더링
+        await renderPage(startPage, `${canvasIdPrefix}-first`);
+    } else {
+        endPage = Math.min(endPage, pageCount);
+
+        const renderPage = async (pageNum, canvasId) => {
+            const page = await pdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 0.5 });
+            const canvas = document.getElementById(canvasId);
+            const context = canvas.getContext('2d');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            await page.render({
+                canvasContext: context,
+                viewport: viewport
+            }).promise;
+        };
+
+        // 첫 페이지 렌더링
+        await renderPage(startPage, `${canvasIdPrefix}-first`);
+
+        // 여러 페이지가 있는 경우 마지막 페이지도 렌더링
+        if (endPage > startPage) {
+            await renderPage(endPage, `${canvasIdPrefix}-last`);
+        }
+    }
+}
+
+document.getElementById('resetButton').addEventListener('click', () => {
+    document.getElementById('fileInput').value = "";
+    filesArray = [];
+    updatePreviews();
+    document.getElementById('downloadButton').disabled = true;
+});
+
+document.getElementById('selectFilesButton').addEventListener('click', () => {
+    document.getElementById('fileInput').click();
+});
+
+document.getElementById('fileInput').addEventListener('change', async (event) => {
+    filesArray = Array.from(event.target.files);
+    pdfDocs = [];
+
+    const fileGroupsContainer = document.getElementById('fileGroups');
+    fileGroupsContainer.innerHTML = '';
+
+    for (let index = 0; index < filesArray.length; index++) {
+        const file = filesArray[index];
+
+        const fileGroup = document.createElement('div');
+        fileGroup.classList.add('file');
+        fileGroup.id = `file-${index}`;
+        fileGroup.dataset.extension = 'pdf';
+        fileGroup.title = `${(file.size / 1024).toFixed(2)} KB`;
+
+        const fileCanvas = document.createElement('div');
+        fileCanvas.classList.add('file__canvas');
+
+        fileGroup.appendChild(fileCanvas);
+        fileGroupsContainer.appendChild(fileGroup);
+
+        if (file.type === 'application/pdf') {
+            const firstCanvas = document.createElement('canvas');
+            firstCanvas.id = `canvas-${index}-first`;
+            firstCanvas.classList.add('pdf');
+            fileCanvas.appendChild(firstCanvas);
+
+            const lastCanvas = document.createElement('canvas');
+            lastCanvas.id = `canvas-${index}-last`;
+            lastCanvas.classList.add('pdf');
+            fileCanvas.appendChild(lastCanvas);
+
+            const pdfDoc = await PDFLib.PDFDocument.load(await file.arrayBuffer());
+            pdfDocs.push(pdfDoc);
+
+            document.getElementById('endPage').max = pdfDoc.getPageCount();
+            document.getElementById('endPage').value = pdfDoc.getPageCount();
+            await renderPDFPreview(file, `canvas-${index}`, 1, pdfDoc.getPageCount());
+        }
+    }
+});
+
+document.getElementById('startPage').addEventListener('input', updatePreviews);
+document.getElementById('endPage').addEventListener('input', updatePreviews);
+
+async function updatePreviews() {
+    const startPage = parseInt(document.getElementById('startPage').value);
+    const endPage = parseInt(document.getElementById('endPage').value);
+
+    const fileGroupsContainer = document.getElementById('fileGroups');
+    fileGroupsContainer.innerHTML = '';
+
+    for (let index = 0; index < filesArray.length; index++) {
+        const file = filesArray[index];
+
+        const fileGroup = document.createElement('div');
+        fileGroup.classList.add('file');
+        fileGroup.id = `file-${index}`;
+        fileGroup.dataset.extension = 'pdf';
+        fileGroup.title = `${(file.size / 1024).toFixed(2)} KB`;
+
+        const fileCanvas = document.createElement('div');
+        fileCanvas.classList.add('file__canvas');
+
+        fileGroup.appendChild(fileCanvas);
+        fileGroupsContainer.appendChild(fileGroup);
+
+        if (file.type === 'application/pdf') {
+            const firstCanvas = document.createElement('canvas');
+            firstCanvas.id = `canvas-${index}-first`;
+            firstCanvas.classList.add('pdf');
+            fileCanvas.appendChild(firstCanvas);
+
+            const lastCanvas = document.createElement('canvas');
+            lastCanvas.id = `canvas-${index}-last`;
+            lastCanvas.classList.add('pdf');
+            fileCanvas.appendChild(lastCanvas);
+
+            await renderPDFPreview(file, `canvas-${index}`, startPage, endPage);
+        }
+    }
+}
+
+// 파일 드래그 앤 드롭 영역을 선택합니다.
+const dropArea = document.getElementById('fileDropArea');
+
+// 파일 드래그 이벤트를 처리합니다.
+dropArea.addEventListener('dragover', (event) => {
+    event.preventDefault(); // 기본 동작을 막습니다.
+    dropArea.classList.add('drag-over'); // 드래그 오버 스타일을 추가합니다.
+});
+
+// 드래그 이벤트가 끝났을 때 처리합니다.
+dropArea.addEventListener('dragleave', () => {
+    dropArea.classList.remove('drag-over'); // 드래그 오버 스타일을 제거합니다.
+});
+
+// 파일 드롭 이벤트를 처리합니다.
+dropArea.addEventListener('drop', async (event) => {
+    event.preventDefault(); // 기본 동작을 막습니다.
+    dropArea.classList.remove('drag-over'); // 드래그 오버 스타일을 제거합니다.
+
+    // 드롭한 파일들을 가져옵니다.
+    const files = Array.from(event.dataTransfer.files);
+
+    // 파일을 처리하는 코드를 여기에 추가합니다.
+    await handleDroppedFiles(files);
+});
+async function handleDroppedFiles(files) {
+    filesArray = files;
+    pdfDocs = [];
+
+    const fileGroupsContainer = document.getElementById('fileGroups');
+    fileGroupsContainer.innerHTML = '';
+
+    for (let index = 0; index < filesArray.length; index++) {
+        const file = filesArray[index];
+
+        const fileGroup = document.createElement('div');
+        fileGroup.classList.add('file');
+        fileGroup.id = `file-${index}`;
+        fileGroup.dataset.extension = 'pdf';
+        fileGroup.title = `${(file.size / 1024).toFixed(2)} KB`;
+
+        const fileCanvas = document.createElement('div');
+        fileCanvas.classList.add('file__canvas');
+
+        fileGroup.appendChild(fileCanvas);
+        fileGroupsContainer.appendChild(fileGroup);
+
+        if (file.type === 'application/pdf') {
+            const firstCanvas = document.createElement('canvas');
+            firstCanvas.id = `canvas-${index}-first`;
+            firstCanvas.classList.add('pdf');
+            fileCanvas.appendChild(firstCanvas);
+
+            const lastCanvas = document.createElement('canvas');
+            lastCanvas.id = `canvas-${index}-last`;
+            lastCanvas.classList.add('pdf');
+            fileCanvas.appendChild(lastCanvas);
+
+            const pdfDoc = await PDFLib.PDFDocument.load(await file.arrayBuffer());
+            pdfDocs.push(pdfDoc);
+
+            document.getElementById('endPage').max = pdfDoc.getPageCount();
+            document.getElementById('endPage').value = pdfDoc.getPageCount();
+            await renderPDFPreview(file, `canvas-${index}`, 1, pdfDoc.getPageCount());
+        }
+    }
+}
+document.getElementById('splitButton').addEventListener('click', async () => {
+    const pdfLib = window.PDFLib;
+    const startPage = parseInt(document.getElementById('startPage').value);
+    const endPage = parseInt(document.getElementById('endPage').value);
+
+    for (let index = 0; index < filesArray.length; index++) {
+        const file = filesArray[index];
+        const pdfDoc = pdfDocs[index];
+
+        const subPdf = await pdfLib.PDFDocument.create();
+        const pages = await subPdf.copyPages(pdfDoc, Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage - 1 + i));
+        pages.forEach((page) => subPdf.addPage(page));
+
+        const pdfBytes = await subPdf.save();
+        const blob = new Blob([pdfBytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+
+        const downloadLink = document.createElement('a');
+        downloadLink.href = url;
+        downloadLink.download = `${file.name.replace('.pdf', '')}_pages_${startPage}_to_${endPage}.pdf`;
+        downloadLink.click();
+
+        URL.revokeObjectURL(url);
+    }
+});
+
+</script>
+</body>
+</html>
+
+
+{% endblock %}
