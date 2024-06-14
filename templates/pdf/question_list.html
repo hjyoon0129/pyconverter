@@ -3,6 +3,98 @@
 
 {% block content %}
 
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title>PDF Tools</title>-->
+<!--    <style>-->
+<!--        .container {-->
+<!--            display: flex;-->
+<!--            flex-wrap: wrap;-->
+<!--            justify-content: center;-->
+<!--        }-->
+
+<!--        .card {-->
+<!--            width: 200px;-->
+<!--            margin: 10px;-->
+<!--            border: 1px solid #ddd;-->
+<!--            border-radius: 5px;-->
+<!--            padding: 20px;-->
+<!--            text-align: center;-->
+<!--            background-color: #fff;-->
+<!--            cursor: pointer; /* 카드 전체를 클릭할 수 있도록 설정 */-->
+<!--            transition: transform 0.3s, box-shadow 0.3s; /* 부드러운 호버 효과를 위한 트랜지션 */-->
+<!--        }-->
+
+<!--        .card img {-->
+<!--            width: 100px;-->
+<!--            height: 100px;-->
+<!--            margin: 0 auto;-->
+<!--        }-->
+
+<!--        .card-title {-->
+<!--            margin-top: 10px;-->
+<!--            font-size: 1.2rem;-->
+<!--        }-->
+
+<!--        .card:hover {-->
+<!--            transform: scale(1); /* 호버 시 카드 크기 확대 */-->
+<!--            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 호버 시 그림자 효과 추가 */-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--    <div class="container">-->
+<!--        <div class="card" id="mergeCard">-->
+<!--            <img src="path/to/merge-icon.png" alt="Merge PDF">-->
+<!--            <h5 class="card-title">Merge PDF</h5>-->
+<!--        </div>-->
+<!--        <div class="card" id="splitCard">-->
+<!--            <img src="path/to/split-icon.png" alt="Split PDF">-->
+<!--            <h5 class="card-title">Split PDF</h5>-->
+<!--        </div>-->
+<!--        <div class="card" id="compressCard">-->
+<!--            <img src="path/to/compress-icon.png" alt="Compress PDF">-->
+<!--            <h5 class="card-title">Compress PDF</h5>-->
+<!--        </div>-->
+<!--        <div class="card" id="convertToWordCard">-->
+<!--            <img src="path/to/word-icon.png" alt="Convert to Word">-->
+<!--            <h5 class="card-title">PDF to Word</h5>-->
+<!--        </div>-->
+<!--        <div class="card" id="convertToPowerPointCard">-->
+<!--            <img src="path/to/powerpoint-icon.png" alt="Convert to PowerPoint">-->
+<!--            <h5 class="card-title">PDF to PPT</h5>-->
+<!--        </div>-->
+<!--        <div class="card" id="convertToExcelCard">-->
+<!--            <img src="path/to/excel-icon.png" alt="Convert to Excel">-->
+<!--            <h5 class="card-title">PDF to Excel</h5>-->
+<!--        </div>-->
+<!--        <div class="card" id="pdfToImageCard">-->
+<!--            <img src="path/to/image-icon.png" alt="PDF to Image">-->
+<!--            <h5 class="card-title">PDF to Image</h5>-->
+<!--        </div>-->
+<!--        <div class="card" id="imageToPdfCard">-->
+<!--            <img src="path/to/pdf-icon.png" alt="Image to PDF">-->
+<!--            <h5 class="card-title">Image to PDF</h5>-->
+<!--        </div>-->
+<!--        <div class="card" id="editPdfCard">-->
+<!--            <img src="path/to/edit-icon.png" alt="Edit PDF">-->
+<!--            <h5 class="card-title">Edit PDF</h5>-->
+<!--        </div>-->
+<!--        <div class="card" id="watermarkCard">-->
+<!--            <img src="path/to/watermark-icon.png" alt="Watermark">-->
+<!--            <h5 class="card-title">Watermark</h5>-->
+<!--        </div>-->
+<!--        <div class="card" id="unlockPdfCard">-->
+<!--            <img src="path/to/unlock-icon.png" alt="Unlock PDF">-->
+<!--            <h5 class="card-title">Unlock PDF</h5>-->
+<!--        </div>-->
+<!--        <div class="card" id="protectPdfCard">-->
+<!--            <img src="path/to/protect-icon.png" alt="Protect PDF">-->
+<!--            <h5 class="card-title">Protect PDF</h5>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</body>-->
+
 <head>
     <meta charset="UTF-8">
     <title>PDF Tools</title>
@@ -15,29 +107,28 @@
 
         .card {
             width: 200px;
+            height: 150px; /* 가로 길이만큼 높이 설정 */
             margin: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             padding: 20px;
             text-align: center;
             background-color: #fff;
-            cursor: pointer; /* 카드 전체를 클릭할 수 있도록 설정 */
-            transition: transform 0.3s, box-shadow 0.3s; /* 부드러운 호버 효과를 위한 트랜지션 */
-        }
-
-        .card img {
-            width: 100px;
-            height: 100px;
-            margin: 0 auto;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #FFC000; /* 노란색 배경 */
         }
 
         .card-title {
-            margin-top: 10px;
-            font-size: 1.2rem;
+            font-size: 1.4rem;
+            color: black; /* 글씨 색상 */
         }
 
         .card:hover {
-            transform: scale(1); /* 호버 시 카드 크기 확대 */
+            transform: scale(1.05); /* 호버 시 카드 크기 확대 */
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 호버 시 그림자 효과 추가 */
         }
     </style>
@@ -45,55 +136,44 @@
 <body>
     <div class="container">
         <div class="card" id="mergeCard">
-            <img src="path/to/merge-icon.png" alt="Merge PDF">
             <h5 class="card-title">Merge PDF</h5>
         </div>
         <div class="card" id="splitCard">
-            <img src="path/to/split-icon.png" alt="Split PDF">
             <h5 class="card-title">Split PDF</h5>
         </div>
         <div class="card" id="compressCard">
-            <img src="path/to/compress-icon.png" alt="Compress PDF">
             <h5 class="card-title">Compress PDF</h5>
         </div>
         <div class="card" id="convertToWordCard">
-            <img src="path/to/word-icon.png" alt="Convert to Word">
             <h5 class="card-title">PDF to Word</h5>
         </div>
         <div class="card" id="convertToPowerPointCard">
-            <img src="path/to/powerpoint-icon.png" alt="Convert to PowerPoint">
             <h5 class="card-title">PDF to PPT</h5>
         </div>
         <div class="card" id="convertToExcelCard">
-            <img src="path/to/excel-icon.png" alt="Convert to Excel">
             <h5 class="card-title">PDF to Excel</h5>
         </div>
         <div class="card" id="pdfToImageCard">
-            <img src="path/to/image-icon.png" alt="PDF to Image">
             <h5 class="card-title">PDF to Image</h5>
         </div>
         <div class="card" id="imageToPdfCard">
-            <img src="path/to/pdf-icon.png" alt="Image to PDF">
             <h5 class="card-title">Image to PDF</h5>
         </div>
         <div class="card" id="editPdfCard">
-            <img src="path/to/edit-icon.png" alt="Edit PDF">
             <h5 class="card-title">Edit PDF</h5>
         </div>
         <div class="card" id="watermarkCard">
-            <img src="path/to/watermark-icon.png" alt="Watermark">
             <h5 class="card-title">Watermark</h5>
         </div>
         <div class="card" id="unlockPdfCard">
-            <img src="path/to/unlock-icon.png" alt="Unlock PDF">
             <h5 class="card-title">Unlock PDF</h5>
         </div>
         <div class="card" id="protectPdfCard">
-            <img src="path/to/protect-icon.png" alt="Protect PDF">
             <h5 class="card-title">Protect PDF</h5>
         </div>
     </div>
 </body>
+
 <script>
     document.getElementById('mergeCard').addEventListener('click', () => {
         window.location.href = "/mergepdf/";
