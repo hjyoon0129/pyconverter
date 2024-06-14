@@ -1155,6 +1155,38 @@
             margin-top: 20px;
         }
 
+        #savedPages {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding: 10px;
+        }
+
+        .page-preview {
+            margin: 0 10px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+        }
+
+        .page-preview.selected {
+            border-color: #007bff;
+        }
+
+        #dropZone {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #dropZone.dragover {
+            border-color: #007bff;
+        }
+
+
+
+
+
         /* 미디어 쿼리 추가 */
         @media (max-width: 768px) {
             #fileDropArea {
@@ -1499,6 +1531,11 @@ document.getElementById('splitButton').addEventListener('click', async () => {
 
 
 
+
+
+
+
+
 // Extract pages functionality
 document.getElementById('selectFilesButtonExtract').addEventListener('click', () => {
     document.getElementById('fileInputExtract').click();
@@ -1522,7 +1559,7 @@ document.getElementById('fileInputExtract').addEventListener('change', async (ev
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
             const page = await pdf.getPage(pageNum);
-            const viewport = page.getViewport({ scale: 0.3 });
+            const viewport = page.getViewport({ scale: 0.4 });
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             canvas.width = viewport.width;
@@ -1543,6 +1580,11 @@ document.getElementById('fileInputExtract').addEventListener('change', async (ev
             savedPagesContainer.appendChild(pagePreview);
         }
     }
+    // 추가된 CSS 스타일을 적용합니다.
+    savedPagesContainer.style.display = 'flex';
+    savedPagesContainer.style.flexWrap = 'nowrap';
+    savedPagesContainer.style.overflowX = 'auto';
+    savedPagesContainer.style.padding = '10px';
 });
 
 document.getElementById('resetButtonExtract').addEventListener('click', () => {
@@ -1583,7 +1625,28 @@ document.getElementById('extractButton').addEventListener('click', async () => {
 
         URL.revokeObjectURL(url);
     }
+
+  const dropZone = document.getElementById('dropZone');
+
+    dropZone.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dropZone.classList.remove('dragover');
+        handleFiles(event.dataTransfer.files);
+    });
+
 });
+
+
+
 </script>
 </body>
 </html>
