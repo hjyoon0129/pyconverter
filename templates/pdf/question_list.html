@@ -95,6 +95,8 @@
 <!--    </div>-->
 <!--</body>-->
 
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>PDF Tools</title>
@@ -109,17 +111,17 @@
             width: 200px;
             height: 150px; /* 가로 길이만큼 높이 설정 */
             margin: 10px;
-            border: 1px solid #ddd;
+            border: 2px solid black; /* 검정색 테두리 */
             border-radius: 5px;
             padding: 20px;
             text-align: center;
-            background-color: #fff;
+            background-color: #FFC000; /* 노란색 배경 */
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #FFC000; /* 노란색 배경 */
+            font-weight: bold; /* 볼드체 */
         }
 
         .card-title {
@@ -130,6 +132,14 @@
         .card:hover {
             transform: scale(1.05); /* 호버 시 카드 크기 확대 */
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 호버 시 그림자 효과 추가 */
+        }
+        /* 미디어 쿼리 */
+        @media (max-width: 768px) {
+            .card {
+                width: 150%; /* 너비를 100%로 설정 */
+                height: 70px; /* 높이를 축소 */
+                margin: 5px;
+            }
         }
     </style>
 </head>

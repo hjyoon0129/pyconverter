@@ -1126,12 +1126,12 @@
 
         #fileDropArea {
             width: 100%;
-            height: 400px; /* 높이를 조절하세요 */
+            height: 447px; /* 높이를 조절하세요 */
             border: 2px dashed #ccc;
             text-align: center;
             line-height: 400px; /* 높이에 맞게 조절하세요 */
             transition: background-color 0.3s, width 0.3s, height 0.3s;
-            margin-top: 5vh; /* 뷰포트 높이의 5%만큼 위로 이동 */
+            margin-top: 7vh; /* 뷰포트 높이의 5%만큼 위로 이동 */
         }
         #fileDropArea.drag-over {
             background-color: #f0f0f0;
@@ -1155,13 +1155,6 @@
             margin-top: 20px;
         }
 
-        #savedPages {
-            display: flex;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            padding: 10px;
-        }
-
         .page-preview {
             margin: 0 10px;
             cursor: pointer;
@@ -1171,20 +1164,40 @@
         .page-preview.selected {
             border-color: #007bff;
         }
+        /* 노란색 탭 버튼 */
+        #tab1Button {
+            background-color: #FFC000;
+        }
 
-        #dropZone {
+        /* 검정색 탭 버튼 */
+        #tab2Button {
+            background-color: black;
+            color: #FFC000;
+        }
+
+
+
+      #dropZone {
+            width: 100%;
+            height: 400px;
             border: 2px dashed #ccc;
-            padding: 20px;
             text-align: center;
-            margin-top: 20px;
+            line-height: 400px;
+            transition: background-color 0.3s, width 0.3s, height 0.3s;
+            margin-top: 5vh;
         }
 
         #dropZone.dragover {
+            background-color: #f0f0f0;
             border-color: #007bff;
         }
 
-
-
+        #savedPages {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding: 10px;
+        }
 
 
         /* 미디어 쿼리 추가 */
@@ -1192,14 +1205,19 @@
             #fileDropArea {
                 display: none;
             }
-        }
+
+
+
+
 
         .page-preview {
             cursor: pointer;
         }
+
         .selected {
             border: 2px solid blue;
         }
+
     </style>
 </head>
 
@@ -1232,7 +1250,7 @@
         <button id="selectFilesButtonExtract">Select PDF file</button>
         <button id="resetButtonExtract">Reset File List</button>
         <button id="extractButton">Download Selected Pages</button>
-        <div id="fileDropAreaExtract">
+        <div id="dropZone">
             <p>Drag and drop your files here</p>
         </div>
         <div id="savedPages"></div>
@@ -1503,6 +1521,8 @@ async function handleDroppedFiles(files) {
     resizeDropArea();
 }
 
+
+
 document.getElementById('splitButton').addEventListener('click', async () => {
     const pdfLib = window.PDFLib;
     const startPage = parseInt(document.getElementById('startPage').value);
@@ -1529,20 +1549,13 @@ document.getElementById('splitButton').addEventListener('click', async () => {
     }
 });
 
-
-
-
-
-
-
-
 // Extract pages functionality
 document.getElementById('selectFilesButtonExtract').addEventListener('click', () => {
     document.getElementById('fileInputExtract').click();
 });
 
-document.getElementById('fileInputExtract').addEventListener('change', async (event) => {
-    filesArray = Array.from(event.target.files);
+const handleFiles = async (files) => {
+    filesArray = Array.from(files);
     pdfDocs = [];
 
     const savedPagesContainer = document.getElementById('savedPages');
@@ -1580,11 +1593,19 @@ document.getElementById('fileInputExtract').addEventListener('change', async (ev
             savedPagesContainer.appendChild(pagePreview);
         }
     }
-    // 추가된 CSS 스타일을 적용합니다.
+
     savedPagesContainer.style.display = 'flex';
     savedPagesContainer.style.flexWrap = 'nowrap';
     savedPagesContainer.style.overflowX = 'auto';
     savedPagesContainer.style.padding = '10px';
+
+    // 드롭존을 오른쪽으로 이동하고 크기 조정
+    resizeDropArea();
+    document.getElementById('dropZone').style.display = 'none'; // 드롭존 숨기기
+};
+
+document.getElementById('fileInputExtract').addEventListener('change', async (event) => {
+    await handleFiles(event.target.files);
 });
 
 document.getElementById('resetButtonExtract').addEventListener('click', () => {
@@ -1592,6 +1613,7 @@ document.getElementById('resetButtonExtract').addEventListener('click', () => {
     filesArray = [];
     pdfDocs = [];
     document.getElementById('savedPages').innerHTML = '';
+    resetDropArea();
 });
 
 document.getElementById('extractButton').addEventListener('click', async () => {
@@ -1625,26 +1647,35 @@ document.getElementById('extractButton').addEventListener('click', async () => {
 
         URL.revokeObjectURL(url);
     }
-
-  const dropZone = document.getElementById('dropZone');
-
-    dropZone.addEventListener('dragover', (event) => {
-        event.preventDefault();
-        dropZone.classList.add('dragover');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('dragover');
-    });
-
-    dropZone.addEventListener('drop', (event) => {
-        event.preventDefault();
-        dropZone.classList.remove('dragover');
-        handleFiles(event.dataTransfer.files);
-    });
-
 });
 
+const dropZone = document.getElementById('dropZone');
+
+dropZone.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', async (event) => {
+    event.preventDefault();
+    dropZone.classList.remove('dragover');
+    const files = Array.from(event.dataTransfer.files);
+    await handleFiles(files);
+    dropZone.style.display = 'none'; // 드롭존 숨기기
+});
+
+function resetDropArea() {
+    const dropZone = document.getElementById('dropZone');
+    const savedPagesContainer = document.getElementById('savedPages');
+
+    dropZone.style.width = '100%';
+    savedPagesContainer.style.width = '100%';
+    dropZone.style.display = 'block'; // 드롭존 다시 표시
+}
 
 
 </script>
