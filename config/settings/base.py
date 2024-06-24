@@ -11,49 +11,6 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 import os
 from pathlib import Path
-from .base import *
-from dotenv import load_dotenv
-
-# .env 파일 로드
-# 프로젝트 루트 디렉토리 경로를 설정합니다.
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
-dotenv_path = BASE_DIR / 'config' / 'settings' / '.env'
-
-# .env 파일 로드, 없으면 .env.example 로드
-if dotenv_path.exists():
-    load_dotenv(dotenv_path)
-else:
-    load_dotenv(BASE_DIR / 'config' / 'settings' / '.env.example')
-
-
-
-# 환경 변수를 가져옵니다.
-GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
-GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET')
-
-NAVER_OAUTH_CLIENT_ID = os.getenv('NAVER_OAUTH_CLIENT_ID')
-NAVER_OAUTH_CLIENT_SECRET = os.getenv('NAVER_OAUTH_CLIENT_SECRET')
-
-# SOCIALACCOUNT_PROVIDERS 설정
-SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'online'},
-        'APP': {
-            'client_id': GOOGLE_OAUTH_CLIENT_ID,
-            'secret': GOOGLE_OAUTH_CLIENT_SECRET,
-            'key': ''
-        }
-    },
-    'naver': {
-        'APP': {
-            'client_id': NAVER_OAUTH_CLIENT_ID,
-            'secret': NAVER_OAUTH_CLIENT_SECRET,
-            'key': ''
-        }
-    }
-}
-
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -94,11 +51,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',     # 추가
     'django.contrib.sitemaps',  # 추가
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
-    'allauth.socialaccount.providers.naver',
 ]
 
 SITE_ID = 1
@@ -111,15 +63,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware',  # 추가된 부분
+
 ]
 
-AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
-)
-
-SOCIALACCOUNT_LOGIN_ON_GET = True
 
 ROOT_URLCONF = 'config.urls'
 

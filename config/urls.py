@@ -34,7 +34,7 @@ urlpatterns = [
     path('editpdf/', include('editpdf.urls')),
     path('spilitpdf/', include('spilitpdf.urls')),
     # path('facehair/', include('facehair.urls')),
-    path('accounts/', include('allauth.urls')),
+    # path('accounts/', include('allauth.urls')),
     path('admin/', admin.site.urls),
 
     path('', main_base_views.home, name='home'),  # '/' 에 해당되는 path
