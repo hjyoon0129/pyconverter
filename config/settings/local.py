@@ -12,6 +12,54 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from pathlib import Path
 from .base import *
+from dotenv import load_dotenv
+
+# # .env 파일의 경로를 설정하고 로드합니다.
+# BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# dotenv_path = os.path.join(BASE_DIR, '.env')
+# load_dotenv(dotenv_path)
+
+
+# 프로젝트 루트 디렉토리 경로를 설정합니다.
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+dotenv_path = BASE_DIR / 'config' / 'settings' / '.env'
+
+# .env 파일 로드, 없으면 .env.example 로드
+if dotenv_path.exists():
+    load_dotenv(dotenv_path)
+else:
+    load_dotenv(BASE_DIR / 'config' / 'settings' / '.env.example')
+
+
+
+# settings.py 파일에서 SOCIALACCOUNT_LOGIN_ON_GET 설정을 추가합니다.
+# 이 설정은 사용자가 로그인 버튼을 클릭했을 때 바로 소셜 로그인 페이지로 리디렉션되도록 합니다.
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# 환경 변수를 가져옵니다.
+GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
+GOOGLE_OAUTH_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH_CLIENT_SECRET')
+
+NAVER_OAUTH_CLIENT_ID = os.getenv('NAVER_OAUTH_CLIENT_ID')
+NAVER_OAUTH_CLIENT_SECRET = os.getenv('NAVER_OAUTH_CLIENT_SECRET')
+
+# SOCIALACCOUNT_PROVIDERS 설정
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': GOOGLE_OAUTH_CLIENT_ID,
+            'secret': GOOGLE_OAUTH_CLIENT_SECRET,
+            'key': ''
+        }
+    },
+    'naver': {
+        'APP': {
+            'client_id': NAVER_OAUTH_CLIENT_ID,
+            'secret': NAVER_OAUTH_CLIENT_SECRET,
+            'key': ''
+        }
+    }
+}
 
 
 
@@ -25,7 +73,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = 'django-insecure-sm8027&$yg*lrj4vajq*bqc98xmr(9o8ut&+nnzuy8sc$=+rjd'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = []
 
@@ -33,6 +81,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'editpdf.apps.EditpdfConfig',
     # 'facehair.apps.FacehairConfig',
     'spilitpdf.apps.SpilitpdfConfig',
     'mergepdf.apps.MergepdfConfig',
@@ -53,6 +102,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',     # 추가
     'django.contrib.sitemaps',  # 추가
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.naver',
 ]
 
 SITE_ID = 1
@@ -65,7 +119,15 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # 추가된 부분
 ]
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+)
+
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
 ROOT_URLCONF = 'config.urls'
 

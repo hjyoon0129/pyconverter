@@ -1,0 +1,677 @@
+{% extends 'base.html' %}
+{% load editpdf_filter %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 편집기</title>
+    <style>
+        .color-option {
+            width: 30px;
+            height: 30px;
+            margin: 5px;
+            border: 2px solid transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            display: inline-block;
+        }
+        .color-option.selected {
+            border-color: #007bff;
+        }
+        #toolbar button {
+            margin: 5px;
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #pencilOptions {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-top: 5px;
+        }
+        #pencilOptions label {
+            margin-right: 10px;
+        }
+        #canvasContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .canvas-wrapper {
+            position: relative;
+        }
+        .canvas-wrapper canvas {
+            border: 1px solid #ccc;
+        }
+        .text-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: red;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: transparent;
+            cursor: move;
+            border: 1px dashed #000;
+            padding: 5px;
+            resize: both;
+            overflow: auto;
+        }
+        .dropdown-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-right: 20px;
+        }
+        .dropdown-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .dropdown-content label {
+            margin-bottom: 6px;
+        }
+        .dropdown-content input[type="color"],
+        .dropdown-content input[type="range"],
+        .dropdown-content select {
+            margin-bottom: 10px;
+        }
+        #textOptions {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>PDF 편집기</h1>
+    <div id="toolbar">
+        <button id="selectFilesButton">PDF 파일 선택</button>
+        <div class="dropdown-wrapper">
+            <button id="addTextButton" disabled>텍스트 추가</button>
+            <div class="dropdown-content" id="textOptions">
+                <label for="textFont">글씨체:</label>
+                <select id="textFont">
+                    <option value="Arial">Arial</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Verdana">Verdana</option>
+                </select>
+                <label for="textColor">글씨 색:</label>
+                <input type="color" id="textColor" value="#FF0000">
+                <label for="textBackgroundColor">배경 색:</label>
+                <input type="color" id="textBackgroundColor" value="#FFFFFF">
+                <label for="textSize">글씨 크기:</label>
+                <input type="range" id="textSize" min="10" max="50" value="16">
+                <span id="textSizeLabel">16 px</span>
+            </div>
+        </div>
+        <button id="addImageButton" disabled>이미지 추가</button>
+        <div class="dropdown-wrapper">
+            <button id="pencilButton">연필</button>
+            <div class="dropdown-content" id="pencilOptions">
+                <label for="pencilColor">색상:</label>
+                <input type="color" id="pencilColor" value="#000000">
+                <br>
+                <label for="pencilThickness">두께:</label>
+                <input type="range" id="pencilThickness" min="1" max="50" value="2">
+                <span id="pencilThicknessLabel">2 px</span>
+                <div id="colorList"></div>
+            </div>
+        </div>
+        <button id="highlighterButton" disabled>형광펜</button>
+        <button id="eraserButton" disabled>지우개</button>
+        <button id="downloadButton" disabled>PDF 다운로드</button>
+    </div>
+    <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+    <div id="canvasContainer"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js"></script>
+<script>
+    let pdfDoc = null;
+    let pdfBytes = null;
+    let canvasContainer = document.getElementById('canvasContainer');
+    let fileInput = document.getElementById('fileInput');
+    let selectFilesButton = document.getElementById('selectFilesButton');
+    let downloadButton = document.getElementById('downloadButton');
+    let addTextButton = document.getElementById('addTextButton');
+    let addImageButton = document.getElementById('addImageButton');
+    let pencilButton = document.getElementById('pencilButton');
+    let pencilOptions = document.getElementById('pencilOptions');
+    let pencilColor = document.getElementById('pencilColor');
+    let pencilThicknessInput = document.getElementById('pencilThickness');
+    let highlighterButton = document.getElementById('highlighterButton');
+    let eraserButton = document.getElementById('eraserButton');
+    let textOptions = document.getElementById('textOptions');
+    let textFont = document.getElementById('textFont');
+    let textColor = document.getElementById('textColor');
+    let textBackgroundColor = document.getElementById('textBackgroundColor');
+    let textSizeInput = document.getElementById('textSize');
+    let textSizeLabel = document.getElementById('textSizeLabel');
+    let textElements = [];
+    let currentTool = null;
+    let canvases = [];
+    let isTextEditingEnabled = false;
+    let newTextElement = null;
+    let initialX = 0;
+    let initialY = 0;
+    let offsetX = 0;
+    let offsetY = 0;
+    let selectedTextElement = null;
+
+
+
+    selectFilesButton.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', handleFileSelect);
+    document.addEventListener('keydown', handleDelete);
+
+    async function handleFileSelect(event) {
+        const file = event.target.files[0];
+        const arrayBuffer = await file.arrayBuffer();
+        pdfBytes = arrayBuffer;
+        renderPDF();
+        addTextButton.disabled = false;
+        addImageButton.disabled = false;
+        pencilButton.disabled = false;
+        highlighterButton.disabled = false;
+        eraserButton.disabled = false;
+        downloadButton.disabled = false;
+    }
+
+    async function renderPDF() {
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js';
+        const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+        const pdf = await loadingTask.promise;
+        canvasContainer.innerHTML = '';
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvasWrapper = document.createElement('div');
+            canvasWrapper.classList.add('canvas-wrapper');
+            canvasWrapper.dataset.pageNum = pageNum;
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            canvasWrapper.appendChild(canvas);
+            canvasContainer.appendChild(canvasWrapper);
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            canvasWrapper.addEventListener('click', startDragging);
+            canvases.push(canvas);
+
+        }
+    }
+
+
+    function startDragging(event) {
+        const canvasWrapper = event.target.closest('.canvas-wrapper');
+        if (!canvasWrapper) return;
+
+        const rect = canvasWrapper.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        if (currentTool === 'text' && isTextEditingEnabled) {
+            const newTextElement = document.createElement('div');
+            newTextElement.classList.add('text-layer');
+            newTextElement.contentEditable = true;
+            newTextElement.style.position = 'absolute'; // Ensure absolute positioning
+            newTextElement.style.left = `${x}px`;
+            newTextElement.style.top = `${y}px`;
+            newTextElement.style.color = textColor.value;
+            newTextElement.style.backgroundColor = textBackgroundColor.value;
+            newTextElement.style.fontSize = `${textSizeInput.value}px`;
+            newTextElement.style.fontFamily = textFont.value;
+            newTextElement.textContent = '텍스트 입력';
+
+            createResizeHandles(newTextElement);
+
+            newTextElement.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                initialX = e.clientX - newTextElement.getBoundingClientRect().left;
+                initialY = e.clientY - newTextElement.getBoundingClientRect().top;
+                const onMouseMove = (moveEvent) => {
+                    const newX = moveEvent.clientX - rect.left - initialX;
+                    const newY = moveEvent.clientY - rect.top - initialY;
+                    newTextElement.style.left = `${newX}px`;
+                    newTextElement.style.top = `${newY}px`;
+                };
+                const onMouseUp = () => {
+                    newTextElement.contentEditable = true;
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                };
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+            });
+
+            newTextElement.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                selectTextElement(newTextElement);
+            });
+
+            canvasWrapper.appendChild(newTextElement);
+            newTextElement.focus();
+
+            // Save the text element properties
+            textElements.push({
+                pageNum: parseInt(canvasWrapper.dataset.pageNum),
+                content: newTextElement.textContent,
+                x: x,
+                y: y,
+                fontSize: textSizeInput.value,
+                fontFamily: textFont.value,
+                color: textColor.value,
+                backgroundColor: textBackgroundColor.value
+            });
+
+            isTextEditingEnabled = false;
+
+            // Close text options dropdown
+            textOptions.style.display = 'none';
+        }
+    }
+
+
+  // Function to handle double-click and create text element with dropdown
+    function handleDoubleClick(event) {
+        const clickedTextElement = event.target;
+        if (clickedTextElement.classList.contains('text-layer')) {
+            selectTextElement(clickedTextElement);
+            textOptions.style.display = 'flex'; // Show text options dropdown on double-click
+        } else {
+            // Create new text element and activate editing
+            const canvasWrapper = event.target.closest('.canvas-wrapper');
+            if (!canvasWrapper) return;
+
+            const rect = canvasWrapper.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const newTextElement = document.createElement('div');
+            newTextElement.classList.add('text-layer');
+            newTextElement.contentEditable = true;
+            newTextElement.style.position = 'absolute'; // Ensure absolute positioning
+            newTextElement.style.left = `${x}px`;
+            newTextElement.style.top = `${y}px`;
+            newTextElement.style.color = textColor.value;
+            newTextElement.style.backgroundColor = textBackgroundColor.value;
+            newTextElement.style.fontSize = `${textSizeInput.value}px`;
+            newTextElement.style.fontFamily = textFont.value;
+            newTextElement.textContent = '텍스트 입력';
+
+            createResizeHandles(newTextElement);
+
+            newTextElement.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                initialX = e.clientX - newTextElement.getBoundingClientRect().left;
+                initialY = e.clientY - newTextElement.getBoundingClientRect().top;
+                const onMouseMove = (moveEvent) => {
+                    const newX = moveEvent.clientX - rect.left - initialX;
+                    const newY = moveEvent.clientY - rect.top - initialY;
+                    newTextElement.style.left = `${newX}px`;
+                    newTextElement.style.top = `${newY}px`;
+                };
+                const onMouseUp = () => {
+                    newTextElement.contentEditable = true;
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                };
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+            });
+
+            newTextElement.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                newTextElement.contentEditable = true;
+                newTextElement.focus();
+                textOptions.style.display = 'flex'; // Show text options dropdown on double-click
+            });
+
+            newTextElement.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectTextElement(newTextElement);
+            });
+
+            canvasWrapper.appendChild(newTextElement);
+            newTextElement.focus();
+
+            // Close other dropdowns or options
+            pencilOptions.style.display = 'none'; // Example: Close pencil options if open
+        }
+    }
+
+
+
+    // Function to handle clicking outside and closing dropdown
+    function handleClickOutside(event) {
+        const isClickInsideTextOptions = textOptions.contains(event.target);
+        const isClickInsideSelectedTextElement = selectedTextElement && selectedTextElement.contains(event.target);
+
+        // Check if the click is inside text options or the selected text element
+        if (isClickInsideTextOptions || isClickInsideSelectedTextElement) {
+            return;
+        }
+
+        // Close the text options dropdown if clicking outside or finishing text editing
+        if (isTextEditingEnabled && document.activeElement !== newTextElement) {
+            textOptions.style.display = 'none';
+            if (selectedTextElement) {
+                selectedTextElement.classList.remove('selected');
+                selectedTextElement.contentEditable = false;
+                selectedTextElement = null;
+                isTextEditingEnabled = true;
+            }
+        } else {
+            // Close text options dropdown if cursor is inactive
+            textOptions.style.display = 'none';
+            if (selectedTextElement) {
+                selectedTextElement.classList.remove('selected');
+                selectedTextElement = null;
+            }
+        }
+
+        // Close other dropdowns or options here if needed
+        pencilOptions.style.display = 'none'; // Example: Close pencil options if open
+    }
+
+    // Close text options dropdown when clicking outside or finishing text editing
+    document.addEventListener('mousedown', handleClickOutside);
+
+    // Update addTextButton click event handler
+    addTextButton.addEventListener('click', () => {
+        if (textOptions.style.display === 'flex') {
+            textOptions.style.display = 'none'; // Close dropdown if already open
+        } else {
+            currentTool = 'text';
+            isTextEditingEnabled = true;
+            textOptions.style.display = 'flex'; // Open dropdown
+        }
+
+        // Close other dropdowns or options
+        pencilOptions.style.display = 'none'; // Example: Close pencil options if open
+    });
+
+    // Function to handle delete key press and remove selected text element
+    function handleDelete(event) {
+        if (event.key === 'Delete' && selectedTextElement) {
+            selectedTextElement.remove();
+            selectedTextElement = null;
+            textOptions.style.display = 'none';
+        }
+    }
+
+    // Delete key press event listener
+    document.addEventListener('keydown', handleDelete);
+
+    // Function to handle text element selection and editing
+    function selectTextElement(element) {
+        if (selectedTextElement && selectedTextElement !== element) {
+            selectedTextElement.classList.remove('selected');
+        }
+        selectedTextElement = element;
+        selectedTextElement.classList.add('selected');
+        textOptions.style.display = 'flex';
+        currentTool = 'text';
+        isTextEditingEnabled = false;
+        newTextElement = selectedTextElement;
+        newTextElement.contentEditable = true;
+        newTextElement.focus();
+
+        // Close other dropdowns or options
+        pencilOptions.style.display = 'none'; // Example: Close pencil options if open
+    }
+
+    // Function to create resize handles for text element
+    function createResizeHandles(element) {
+        const handles = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'left', 'right', 'top', 'bottom'];
+        handles.forEach(handle => {
+            const resizeHandle = document.createElement('div');
+            resizeHandle.classList.add('resize-handle', handle);
+            resizeHandle.addEventListener('mousedown', startResize);
+            element.appendChild(resizeHandle);
+        });
+    }
+
+    // Function to handle resizing of text element
+    function startResize(event) {
+        event.stopPropagation();
+        const handle = event.target;
+        const element = handle.parentElement;
+        const rect = element.getBoundingClientRect();
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const startWidth = rect.width;
+        const startHeight = rect.height;
+        const startLeft = rect.left;
+        const startTop = rect.top;
+
+        function resize(event) {
+            const dx = event.clientX - startX;
+            const dy = event.clientY - startY;
+
+            if (handle.classList.contains('right')) {
+                element.style.width = `${startWidth + dx}px`;
+            }
+            if (handle.classList.contains('bottom')) {
+                element.style.height = `${startHeight + dy}px`;
+            }
+            if (handle.classList.contains('left')) {
+                element.style.width = `${startWidth - dx}px`;
+                element.style.left = `${startLeft + dx}px`;
+            }
+            if (handle.classList.contains('top')) {
+                element.style.height = `${startHeight - dy}px`;
+                element.style.top = `${startTop + dy}px`;
+            }
+            if (handle.classList.contains('top-left')) {
+                element.style.width = `${startWidth - dx}px`;
+                element.style.left = `${startLeft + dx}px`;
+                element.style.height = `${startHeight - dy}px`;
+                element.style.top = `${startTop + dy}px`;
+            }
+            if (handle.classList.contains('top-right')) {
+                element.style.width = `${startWidth + dx}px`;
+                element.style.height = `${startHeight - dy}px`;
+                element.style.top = `${startTop + dy}px`;
+            }
+            if (handle.classList.contains('bottom-left')) {
+                element.style.width = `${startWidth - dx}px`;
+                element.style.left = `${startLeft + dx}px`;
+                element.style.height = `${startHeight + dy}px`;
+            }
+            if (handle.classList.contains('bottom-right')) {
+                element.style.width = `${startWidth + dx}px`;
+                element.style.height = `${startHeight + dy}px`;
+            }
+        }
+
+        function stopResize() {
+            window.removeEventListener('mousemove', resize);
+            window.removeEventListener('mouseup', stopResize);
+        }
+
+        window.addEventListener('mousemove', resize);
+        window.addEventListener('mouseup', stopResize);
+    }
+
+
+    pencilButton.addEventListener('click', () => {
+        if (currentTool === 'pencil' && pencilOptions.style.display === 'flex') {
+            pencilOptions.style.display = 'none';
+        } else {
+            currentTool = 'pencil';
+            pencilOptions.style.display = 'flex';
+        }
+    });
+
+    pencilThicknessInput.addEventListener('input', () => {
+        const thickness = pencilThicknessInput.value;
+        pencilThicknessLabel.textContent = `${thickness} px`;
+    });
+
+    const pencilColors = ['#FF0000', '#000000', '#0000FF', '#00FF00', '#800080', '#FFA500'];
+    const colorList = document.createElement('div');
+    colorList.id = 'colorList';
+
+    pencilColors.forEach(color => {
+        const colorOption = document.createElement('div');
+        colorOption.classList.add('color-option');
+        colorOption.style.backgroundColor = color;
+        colorOption.addEventListener('click', () => {
+            pencilColor.value = color;
+        });
+        colorList.appendChild(colorOption);
+    });
+
+    pencilOptions.appendChild(colorList);
+    pencilOptions.appendChild(pencilThicknessInput);
+    pencilOptions.appendChild(document.createElement('br'));
+    pencilOptions.appendChild(pencilThicknessLabel);
+
+
+
+    textSizeInput.addEventListener('input', () => {
+        const size = textSizeInput.value;
+        textSizeLabel.textContent = `${size} px`;
+        if (newTextElement) {
+            newTextElement.style.fontSize = `${size}px`;
+        }
+    });
+
+    textFont.addEventListener('change', () => {
+        if (newTextElement) {
+            newTextElement.style.fontFamily = textFont.value;
+        }
+    });
+
+    textColor.addEventListener('input', () => {
+        if (newTextElement) {
+            newTextElement.style.color = textColor.value;
+        }
+    });
+
+    textBackgroundColor.addEventListener('input', () => {
+        if (newTextElement) {
+            newTextElement.style.backgroundColor = textBackgroundColor.value;
+        }
+    });
+
+
+    let drawing = false;
+    let startX = 0;
+    let startY = 0;
+
+    function startDrawing(event) {
+        if (currentTool === 'pencil') {
+            drawing = true;
+            const rect = event.target.getBoundingClientRect();
+            startX = event.clientX - rect.left;
+            startY = event.clientY - rect.top;
+
+            // 드롭다운 숨기기
+            pencilOptions.style.display = 'none';
+        }
+    }
+
+    function draw(event) {
+        if (!drawing || currentTool !== 'pencil') return;
+
+        const canvas = event.target;
+        const context = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        context.strokeStyle = pencilColor.value;
+        context.lineWidth = pencilThicknessInput.value;
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.beginPath();
+        context.moveTo(startX, startY);
+        context.lineTo(x, y);
+        context.stroke();
+        context.closePath();
+
+        startX = x;
+        startY = y;
+    }
+
+    function stopDrawing() {
+        drawing = false;
+    }
+
+    // PDF 다운로드 버튼 클릭 시 실행되는 함수
+    downloadButton.addEventListener('click', async () => {
+        try {
+            const pdfDoc = await PDFLib.PDFDocument.create();
+
+            for (let i = 0; i < canvases.length; i++) {
+                const canvas = canvases[i];
+                const { width, height } = canvas;
+                const pngDataUrl = canvas.toDataURL('image/png');
+                const pngImage = await pdfDoc.embedPng(pngDataUrl);
+                const page = pdfDoc.addPage([width, height]);
+                page.drawImage(pngImage, {
+                    x: 0,
+                    y: 0,
+                    width: width,
+                    height: height,
+                });
+            }
+
+            const pdfBytes = await pdfDoc.save();
+
+            // Blob 객체 생성 (다운로드할 파일 형식은 PDF로 설정)
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+            // Blob URL 생성
+            const url = URL.createObjectURL(blob);
+
+            // a 태그를 동적으로 생성하여 다운로드 링크
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'edited.pdf'; // 다운로드될 파일 이름 설정
+            document.body.appendChild(a); // a 태그를 body에 추가 (필수)
+            a.click(); // a 태그의 클릭 이벤트 실행
+
+            // Blob URL 해제 (메모리 절약을 위해)
+            URL.revokeObjectURL(url);
+
+            // 다운로드 후에 a 태그를 제거 (필수는 아니지만 깔끔한 방법)
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('PDF 다운로드 중 오류 발생:', error);
+        }
+    });
+</script>
+
+</body>
+</html>
+{% endblock %}

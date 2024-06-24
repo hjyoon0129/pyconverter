@@ -9,6 +9,7 @@ from qna.views import base_views as qna_base_views
 from pdf.views import base_views as pdf_base_views
 from mergepdf.views import base_views as mergepdf_base_views
 from spilitpdf.views import base_views as spilitpdf_base_views
+from editpdf.views import base_views as editpdf_base_views
 # from facehair.views import base_views as facehair_base_views
 
 from django.contrib.sitemaps.views import sitemap
@@ -30,9 +31,10 @@ urlpatterns = [
     path('qna/', include('qna.urls')),
     path('pdf/', include('pdf.urls')),
     path('mergepdf/', include('mergepdf.urls')),
+    path('editpdf/', include('editpdf.urls')),
     path('spilitpdf/', include('spilitpdf.urls')),
     # path('facehair/', include('facehair.urls')),
-
+    path('accounts/', include('allauth.urls')),
     path('admin/', admin.site.urls),
 
     path('', main_base_views.home, name='home'),  # '/' 에 해당되는 path
@@ -44,6 +46,7 @@ urlpatterns = [
     path('', pdf_base_views.index, name='index'),
     path('', mergepdf_base_views.index, name='index'),
     path('', spilitpdf_base_views.index, name='index'),
+    path('', editpdf_base_views.index, name='index'),
     # path('', facehair_base_views.index, name='index'),
     # path('', pdf_merge_base_views.index, name='index'),
 
