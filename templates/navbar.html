@@ -1,46 +1,44 @@
 {% load static %}
-<style>
-<!--  .navbar-dark .navbar-nav .nav-link {-->
-<!--    background-color: #FFC107; /* 원하는 배경색으로 변경 */-->
-<!--    border-radius: 5px; /* 원하는 모양의 네모난 박스로 변경 */-->
-<!--  }-->
+    <style>
+        /* 기존 Navbar 스타일 유지 */
+        .navbar-dark .navbar-nav .nav-link.logout {
+            background-color: #FFC107; /* 원하는 배경색으로 변경 */
+            font-weight: bold; /* 글씨체를 bold체로 설정 */
+            color: black; /* 글씨 색상을 검정색으로 설정 */
+        }
 
+        .navbar-nav {
+            padding: 8px 12px;
+        }
 
+        .navbar-nav li:hover {
+            background-color: grey;
+            border-radius: 4px;
+        }
 
+        @media screen and (max-width: 768px) {
+            .navbar-nav {
+                display: flex;
+                padding: 8px 12px;
+                text-align: center;
+            }
 
-  .navbar-dark .navbar-nav .nav-link.logout {
-    background-color: #FFC107; /* 원하는 배경색으로 변경 */
-    font-weight: bold; /* 글씨체를 bold체로 설정 */
-    color: black; /* 글씨 색상을 검정색으로 설정 */
+            .navbar-nav li:hover {
+                background-color: grey;
+                border-radius: 4px;
+                width: 100%;
+            }
+        }
 
-  }
-.navbar-nav {
-
-  padding: 8px 12px;
-}
-
-.navbar-nav li:hover{
-  background-color: grey;
-  border-radius: 4px;
-
-}
-
-@media screen and (max-width: 768px) {
-    .navbar-nav {
-      display: flex;
-      padding: 8px 12px;
-      text-align: center;
-    }
-
-    .navbar-nav li:hover{
-      background-color: grey;
-      border-radius: 4px;
-      width: 100%;
-
-    }
-}
-
-</style>
+        /* "Impossible is Nothing" 스타일 */
+        .impossible-text {
+            color: #FFA500; /* 주황색 */
+            font-weight: normal; /* 원하는 글씨 두께로 설정 */
+            font-size: 0.9em; /* 원하는 글씨 크기로 조정 */
+            margin-top: 5px; /* "PyConverter"와의 간격 조정 */
+            display: block; /* 다음 줄에 표시되도록 블록 요소로 설정 */
+        }
+    </style>
 
 
 <script src="https://kit.fontawesome.com/ccb1843f6b.js" crossorigin="anonymous"></script>
@@ -51,7 +49,7 @@
 <!--            <i class="fas fa-thin fa-scale-balanced fa-sm"></i> PyConverter &lt;!&ndash; fa-lg 추가 &ndash;&gt;-->
              <img src="{% static 'question_images/pyconverter_logo.png' %}" alt="PyConverter 로고" style="width: 30px;">
     PyConverter
-
+    <span class="impossible-text">Impossible is Nothing</span>
         </a>
         <button class="navbar-toggler" type="button"
                 data-bs-toggle="collapse"
@@ -61,6 +59,7 @@
                 aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
+<!--        <div class="sidebar-title">Impossible is Nothing</div>-->
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
