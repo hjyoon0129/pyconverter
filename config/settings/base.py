@@ -30,6 +30,8 @@ ALLOWED_HOSTS = ['3.37.233.160','pyconverter.com']
 # Application definition
 
 INSTALLED_APPS = [
+    'poketmoncard.apps.PoketmoncardConfig',
+    'pikmin.apps.PikminConfig',
     'editpdf.apps.EditpdfConfig',
     # 'facehair.apps.FacehairConfig',
     'spilitpdf.apps.SpilitpdfConfig',
