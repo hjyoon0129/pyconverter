@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'update.apps.UpdateConfig',
     'poketmoncard.apps.PoketmoncardConfig',
     'pikmin.apps.PikminConfig',
     'editpdf.apps.EditpdfConfig',

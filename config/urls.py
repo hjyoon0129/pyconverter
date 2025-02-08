@@ -8,6 +8,7 @@ from main.views import base_views as main_base_views
 from qna.views import base_views as qna_base_views
 from pikmin.views import base_views as pikmin_base_views
 from poketmoncard.views import base_views as poketmoncard_base_views
+from update.views import base_views as update_base_views
 
 from pdf.views import base_views as pdf_base_views
 from mergepdf.views import base_views as mergepdf_base_views
@@ -33,6 +34,7 @@ urlpatterns = [
     path('qna/', include('qna.urls')),
     path('pikmin/', include('pikmin.urls')),
     path('poketmoncard/', include('poketmoncard.urls')),
+    path('update/', include('update.urls')),
     path('pdf/', include('pdf.urls')),
     path('mergepdf/', include('mergepdf.urls')),
     path('editpdf/', include('editpdf.urls')),
@@ -49,6 +51,7 @@ urlpatterns = [
     path('', qna_base_views.index, name='index'),
     path('', pikmin_base_views.index, name='index'),
     path('', poketmoncard_base_views.index, name='index'),
+    path('', update_base_views.index, name='index'),
     path('', pdf_base_views.index, name='index'),
     path('', mergepdf_base_views.index, name='index'),
     path('', spilitpdf_base_views.index, name='index'),

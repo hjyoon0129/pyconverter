@@ -1,0 +1,549 @@
+{% extends 'base.html' %}
+{% load editpdf_filter %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF 편집기</title>
+  <style>
+    /* 기본 스타일 */
+    .color-option {
+      width: 30px;
+      height: 30px;
+      margin: 5px;
+      border: 2px solid transparent;
+      border-radius: 50%;
+      cursor: pointer;
+      display: inline-block;
+    }
+    .color-option.selected {
+      border-color: #007bff;
+    }
+    #toolbar button {
+      margin: 5px;
+      padding: 10px 20px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    /* 드롭다운 컨테이너 (텍스트, 연필, 지우개 옵션) */
+    #pencilOptions, #textOptions, #eraserOptions {
+      display: none;
+      position: absolute;
+      background-color: #fff;
+      box-shadow: 0px 8px 16px rgba(0,0,0,0.2);
+      z-index: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin-top: 5px;
+    }
+    .dropdown-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-right: 20px;
+    }
+    .dropdown-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .dropdown-content label,
+    .dropdown-content input,
+    .dropdown-content select,
+    .dropdown-content span {
+      margin-bottom: 6px;
+    }
+    #canvasContainer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .canvas-wrapper {
+      position: relative;
+    }
+    .canvas-wrapper canvas {
+      border: 1px solid #ccc;
+    }
+    /* 텍스트 요소 기본 스타일 (초기 텍스트 및 글자색을 검정으로 설정) */
+    .text-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      color: #000000;  /* 초기 텍스트 색을 검정으로 설정 */
+      font-size: 16px;
+      font-weight: bold;
+      background-color: transparent;
+      cursor: move;
+      border: 1px dashed #000;
+      padding: 5px;
+      /* resize 핸들은 생성하지 않음 */
+    }
+    /* (resize 핸들은 더 이상 사용하지 않음) */
+  </style>
+  <!-- Tesseract.js (OCR용) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+</head>
+<body>
+  <h1>PDF 편집기</h1>
+  <div id="toolbar">
+    <button id="selectFilesButton">PDF 파일 선택</button>
+
+    <!-- 텍스트 추가 (옵션: 글씨체, 글씨 색, 배경 색) -->
+    <div class="dropdown-wrapper">
+      <button id="addTextButton" disabled>텍스트 추가</button>
+      <div class="dropdown-content" id="textOptions">
+        <label for="textFont">글씨체:</label>
+        <select id="textFont">
+          <option value="Arial">Arial</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Verdana">Verdana</option>
+        </select>
+        <label for="textColor">글씨 색:</label>
+        <input type="color" id="textColor" value="#000000">
+        <label for="textBackgroundColor">배경 색:</label>
+        <input type="color" id="textBackgroundColor" value="#FFFFFF">
+      </div>
+
+
+    <button id="addImageButton" disabled>이미지 추가</button>
+
+    <!-- 연필 도구 (옵션: 색상, 두께) -->
+    <div class="dropdown-wrapper">
+      <button id="pencilButton" disabled>연필</button>
+      <div class="dropdown-content" id="pencilOptions">
+        <label for="pencilColor">색상:</label>
+        <input type="color" id="pencilColor" value="#000000">
+        <br>
+        <label for="pencilThickness">두께:</label>
+        <input type="range" id="pencilThickness" min="1" max="50" value="2">
+        <span id="pencilThicknessLabel">2 px</span>
+        <!-- 색상 팔레트는 한 번만 초기화 -->
+      </div>
+    </div>
+
+    <!-- 형광펜: 별도 옵션 없이 고정 (노란색, 불투명도 0.3) -->
+    <button id="highlighterButton" disabled>형광펜</button>
+
+    <!-- 지우개 도구 (옵션: 두께 설정) -->
+    <div class="dropdown-wrapper">
+      <button id="eraserButton" disabled>지우개</button>
+      <div class="dropdown-content" id="eraserOptions">
+        <label for="eraserThickness">두께:</label>
+        <input type="range" id="eraserThickness" min="1" max="50" value="4">
+        <span id="eraserThicknessLabel">4 px</span>
+      </div>
+    </div>
+
+    <button id="downloadButton" disabled>PDF 다운로드</button>
+  </div>
+
+  <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+  <div id="canvasContainer"></div>
+
+  <!-- pdf-lib 및 pdf.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js"></script>
+
+  <script>
+    /*********************** 전역 변수 ***********************/
+    let pdfBytes = null;
+    const canvasContainer = document.getElementById('canvasContainer');
+    const fileInput = document.getElementById('fileInput');
+    const selectFilesButton = document.getElementById('selectFilesButton');
+    const downloadButton = document.getElementById('downloadButton');
+    const addTextButton = document.getElementById('addTextButton');
+    const addImageButton = document.getElementById('addImageButton');
+    const pencilButton = document.getElementById('pencilButton');
+    const pencilOptions = document.getElementById('pencilOptions');
+    const pencilColor = document.getElementById('pencilColor');
+    const pencilThicknessInput = document.getElementById('pencilThickness');
+    const pencilThicknessLabel = document.getElementById('pencilThicknessLabel');
+    const highlighterButton = document.getElementById('highlighterButton');
+    const eraserButton = document.getElementById('eraserButton');
+    const eraserOptions = document.getElementById('eraserOptions');
+    const eraserThicknessInput = document.getElementById('eraserThickness');
+    const eraserThicknessLabel = document.getElementById('eraserThicknessLabel');
+    const textOptions = document.getElementById('textOptions');
+    const textFont = document.getElementById('textFont');
+    const textColor = document.getElementById('textColor');
+    const textBackgroundColor = document.getElementById('textBackgroundColor');
+
+    let canvases = [];
+    let currentTool = null;
+    let drawing = false;
+    let startX = 0, startY = 0;
+    let selectedTextElement = null;
+    let isTextEditingEnabled = false;
+    let newTextElement = null;
+    let initialX = 0, initialY = 0;
+
+    /*********************** PDF 업로드 및 렌더링 ***********************/
+    selectFilesButton.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      const arrayBuffer = await file.arrayBuffer();
+      pdfBytes = arrayBuffer;
+      await renderPDF();
+      // 도구 활성화
+      addTextButton.disabled = false;
+      addImageButton.disabled = false;
+      pencilButton.disabled = false;
+      highlighterButton.disabled = false;
+      eraserButton.disabled = false;
+      downloadButton.disabled = false;
+      // PDF 렌더링 후 자동 OCR 실행 → PDF 내 텍스트 오버레이 생성
+      runOCR();
+    });
+
+    async function renderPDF() {
+      const pdfjsLib = window['pdfjs-dist/build/pdf'];
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js';
+      const loadingTask = pdfjsLib.getDocument({ data: pdfBytes });
+      const pdf = await loadingTask.promise;
+      canvasContainer.innerHTML = '';
+      canvases = [];
+
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvasWrapper = document.createElement('div');
+        canvasWrapper.classList.add('canvas-wrapper');
+        canvasWrapper.dataset.pageNum = pageNum;
+        canvasWrapper.style.position = 'relative';
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvasWrapper.appendChild(canvas);
+        canvasContainer.appendChild(canvasWrapper);
+
+        await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+        // 그리기 이벤트 등록
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // 캔버스 영역 클릭 시 텍스트 도구 사용 (현재 도구가 텍스트일 때)
+        canvasWrapper.addEventListener('click', (e) => {
+          startDragging(e, canvasWrapper);
+        });
+
+        canvases.push(canvas);
+      }
+    }
+
+    /*********************** 그리기 관련 함수 ***********************/
+    function startDrawing(event) {
+      if (currentTool === 'pencil' || currentTool === 'highlighter' || currentTool === 'eraser') {
+        drawing = true;
+        const rect = event.target.getBoundingClientRect();
+        startX = event.clientX - rect.left;
+        startY = event.clientY - rect.top;
+        // 옵션 드롭다운 숨김
+        pencilOptions.style.display = 'none';
+        textOptions.style.display = 'none';
+        eraserOptions.style.display = 'none';
+      }
+    }
+
+    function draw(event) {
+      if (!drawing) return;
+      const canvas = event.target;
+      const context = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      context.beginPath();
+      context.moveTo(startX, startY);
+      context.lineTo(x, y);
+
+      if (currentTool === 'pencil') {
+        context.strokeStyle = pencilColor.value;
+        context.lineWidth = pencilThicknessInput.value;
+        context.globalAlpha = 1;
+        context.globalCompositeOperation = 'source-over';
+      } else if (currentTool === 'highlighter') {
+        context.strokeStyle = "#FFFF00";
+        context.lineWidth = pencilThicknessInput.value;
+        context.globalAlpha = 0.3;
+        context.globalCompositeOperation = 'source-over';
+      } else if (currentTool === 'eraser') {
+        context.globalCompositeOperation = 'destination-out';
+        context.strokeStyle = "rgba(0,0,0,1)";
+        context.lineWidth = eraserThicknessInput.value;
+      }
+
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      context.stroke();
+      context.closePath();
+
+      // 상태 복구
+      if (currentTool === 'eraser') {
+        context.globalCompositeOperation = 'source-over';
+      } else if (currentTool === 'highlighter') {
+        context.globalAlpha = 1;
+      }
+
+      startX = x;
+      startY = y;
+    }
+
+    function stopDrawing() {
+      drawing = false;
+    }
+
+    /*********************** 텍스트 레이어 추가 및 드래그 ***********************/
+    function startDragging(event, canvasWrapper) {
+      if (currentTool === 'text' && isTextEditingEnabled) {
+        const rect = canvasWrapper.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        const newText = document.createElement('div');
+        newText.classList.add('text-layer');
+        newText.contentEditable = true;
+        newText.style.position = 'absolute';
+        newText.style.left = `${x}px`;
+        newText.style.top = `${y}px`;
+        newText.style.color = textColor.value;
+        newText.style.backgroundColor = textBackgroundColor.value;
+        newText.style.fontSize = "16px";
+        newText.style.fontFamily = textFont.value;
+        newText.textContent = '텍스트 입력';
+        // resize 핸들은 생성하지 않음
+
+        // 포커스 시 placeholder 텍스트 지우기
+        newText.addEventListener('focus', () => {
+          if (newText.textContent === '텍스트 입력') {
+            newText.textContent = '';
+          }
+        });
+
+        // 이동을 위한 드래그 이벤트
+        newText.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          initialX = e.clientX - newText.getBoundingClientRect().left;
+          initialY = e.clientY - newText.getBoundingClientRect().top;
+          const onMouseMove = (moveEvent) => {
+            const newX = moveEvent.clientX - canvasWrapper.getBoundingClientRect().left - initialX;
+            const newY = moveEvent.clientY - canvasWrapper.getBoundingClientRect().top - initialY;
+            newText.style.left = `${newX}px`;
+            newText.style.top = `${newY}px`;
+          };
+          const onMouseUp = () => {
+            newText.contentEditable = true;
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+          };
+          window.addEventListener('mousemove', onMouseMove);
+          window.addEventListener('mouseup', onMouseUp);
+        });
+
+        canvasWrapper.appendChild(newText);
+        newText.focus();
+        isTextEditingEnabled = false;
+        textOptions.style.display = 'none';
+      }
+    }
+
+    /*********************** 텍스트 선택 및 삭제 ***********************/
+    function selectTextElement(element) {
+      if (selectedTextElement && selectedTextElement !== element) {
+        selectedTextElement.classList.remove('selected');
+      }
+      selectedTextElement = element;
+      selectedTextElement.classList.add('selected');
+      textOptions.style.display = 'flex';
+      currentTool = 'text';
+      newTextElement = selectedTextElement;
+      newTextElement.contentEditable = true;
+      newTextElement.focus();
+      pencilOptions.style.display = 'none';
+      eraserOptions.style.display = 'none';
+    }
+
+    function handleDelete(event) {
+      if (event.key === 'Delete' && selectedTextElement) {
+        selectedTextElement.remove();
+        selectedTextElement = null;
+        textOptions.style.display = 'none';
+      }
+    }
+    document.addEventListener('keydown', handleDelete);
+
+    /*********************** 도구 버튼 이벤트 ***********************/
+    addTextButton.addEventListener('click', () => {
+      currentTool = 'text';
+      isTextEditingEnabled = true;
+      // 텍스트 옵션 드롭다운 표시 (글씨체, 글씨 색, 배경 색)
+      textOptions.style.display = 'flex';
+      pencilOptions.style.display = 'none';
+      eraserOptions.style.display = 'none';
+    });
+
+    pencilButton.addEventListener('click', () => {
+      currentTool = 'pencil';
+      // pencilOptions는 한 번만 초기화하도록 처리
+      if (!pencilOptions.dataset.initialized) {
+        // (이미 HTML 내부에 슬라이드와 색상 입력 요소가 있으므로 별도 추가하지 않음)
+        pencilOptions.dataset.initialized = "true";
+      }
+      pencilOptions.style.display = (pencilOptions.style.display === 'flex') ? 'none' : 'flex';
+      textOptions.style.display = 'none';
+      eraserOptions.style.display = 'none';
+    });
+
+    highlighterButton.addEventListener('click', () => {
+      currentTool = 'highlighter';
+      pencilOptions.style.display = 'none';
+      textOptions.style.display = 'none';
+      eraserOptions.style.display = 'none';
+    });
+
+    eraserButton.addEventListener('click', () => {
+      currentTool = 'eraser';
+      // 지우개 옵션은 display "block"으로 토글
+      eraserOptions.style.display = (eraserOptions.style.display === 'block') ? 'none' : 'block';
+      pencilOptions.style.display = 'none';
+      textOptions.style.display = 'none';
+    });
+
+    pencilThicknessInput.addEventListener('input', () => {
+      pencilThicknessLabel.textContent = `${pencilThicknessInput.value} px`;
+    });
+
+    eraserThicknessInput.addEventListener('input', () => {
+      eraserThicknessLabel.textContent = `${eraserThicknessInput.value} px`;
+    });
+
+    /*********************** 연필 색상 팔레트 (한번만 추가) ***********************/
+    (function initPencilColors() {
+      if (!document.getElementById('colorList')) {
+        const pencilColors = ['#FF0000', '#000000', '#0000FF', '#00FF00', '#800080', '#FFA500'];
+        const colorList = document.createElement('div');
+        colorList.id = 'colorList';
+        pencilColors.forEach(color => {
+          const colorOption = document.createElement('div');
+          colorOption.classList.add('color-option');
+          colorOption.style.backgroundColor = color;
+          colorOption.addEventListener('click', () => {
+            pencilColor.value = color;
+          });
+          colorList.appendChild(colorOption);
+        });
+        pencilOptions.appendChild(colorList);
+      }
+    })();
+
+    /*********************** OCR 기능 (PDF 업로드 시 자동 실행) ***********************/
+    async function runOCR() {
+      for (let i = 0; i < canvases.length; i++) {
+        const canvas = canvases[i];
+        const canvasWrapper = canvas.parentElement;
+        try {
+          // canvas.toDataURL()를 OCR 입력으로 사용
+          const result = await Tesseract.recognize(canvas.toDataURL(), 'eng', { logger: m => console.log(m) });
+          const lines = result.data.lines;
+          lines.forEach(line => {
+            createOCRTextLayer(canvasWrapper, line);
+          });
+        } catch (error) {
+          console.error('OCR 실행 중 오류 (캔버스 ' + i + '):', error);
+        }
+      }
+    }
+
+    function createOCRTextLayer(canvasWrapper, line) {
+      const newText = document.createElement('div');
+      newText.classList.add('text-layer');
+      newText.contentEditable = true;
+      newText.style.position = 'absolute';
+      newText.style.left = `${line.bbox.x0}px`;
+      newText.style.top = `${line.bbox.y0}px`;
+      newText.style.width = `${line.bbox.x1 - line.bbox.x0}px`;
+      newText.style.height = `${line.bbox.y1 - line.bbox.y0}px`;
+      newText.style.color = textColor.value;
+      newText.style.fontSize = "16px";
+      newText.style.fontFamily = textFont.value;
+      newText.style.backgroundColor = 'rgba(255,255,255,0.0)';
+      newText.textContent = line.text;
+      // resize 핸들은 생성하지 않음
+
+      newText.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        initialX = e.clientX - newText.getBoundingClientRect().left;
+        initialY = e.clientY - newText.getBoundingClientRect().top;
+        const onMouseMove = (moveEvent) => {
+          const newX = moveEvent.clientX - canvasWrapper.getBoundingClientRect().left - initialX;
+          const newY = moveEvent.clientY - canvasWrapper.getBoundingClientRect().top - initialY;
+          newText.style.left = `${newX}px`;
+          newText.style.top = `${newY}px`;
+        };
+        const onMouseUp = () => {
+          newText.contentEditable = true;
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+      });
+
+      newText.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        selectTextElement(newText);
+        newText.contentEditable = true;
+        newText.focus();
+      });
+
+      canvasWrapper.appendChild(newText);
+    }
+
+    /*********************** PDF 다운로드 ***********************/
+    downloadButton.addEventListener('click', async () => {
+      try {
+        const pdfDoc = await PDFLib.PDFDocument.create();
+        for (let i = 0; i < canvases.length; i++) {
+          const canvas = canvases[i];
+          const { width, height } = canvas;
+          const pngDataUrl = canvas.toDataURL('image/png');
+          const pngImage = await pdfDoc.embedPng(pngDataUrl);
+          const page = pdfDoc.addPage([width, height]);
+          page.drawImage(pngImage, {
+            x: 0,
+            y: 0,
+            width: width,
+            height: height,
+          });
+        }
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'edited.pdf';
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } catch (error) {
+        console.error('PDF 다운로드 중 오류:', error);
+      }
+    });
+  </script>
+</body>
+</html>
+{% endblock %}

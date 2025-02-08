@@ -855,32 +855,15 @@
           page.drawImage(pngImage, { x: 0, y: 0, width: width, height: height });
         }
         const pdfBytesData = await pdfDoc.save();
-
-        // File System Access API로 파일 저장 (지원하는 브라우저에서만 동작)
-        if (window.showSaveFilePicker) {
-          const handle = await window.showSaveFilePicker({
-            suggestedName: 'edited.pdf',
-            types: [{
-              description: 'PDF Files',
-              accept: { 'application/pdf': ['.pdf'] }
-            }]
-          });
-          const writableStream = await handle.createWritable();
-          await writableStream.write(pdfBytesData);
-          await writableStream.close();
-          alert('PDF 파일이 저장되었습니다.');
-        } else {
-          // 지원하지 않는 경우, 기본 다운로드 방식 사용
-          const blob = new Blob([pdfBytesData], { type: 'application/pdf' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'edited.pdf';
-          document.body.appendChild(a);
-          a.click();
-          URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-        }
+        const blob = new Blob([pdfBytesData], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'edited.pdf';
+        document.body.appendChild(a);
+        a.click();
+        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
       } catch (error) {
         console.error('Error during PDF download:', error);
       }
