@@ -9,13 +9,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF Editor</title>
   <style>
-    /* Toolbar: 모든 버튼을 동일한 크기 및 간격으로 배치 */
+    /* Toolbar 스타일 */
     #toolbar {
       display: flex;
       justify-content: space-around;
       align-items: center;
       width: 100%;
       margin-bottom: 10px;
+      position: relative;
     }
     #toolbar button {
       flex: 1;
@@ -29,7 +30,22 @@
       cursor: pointer;
       border-radius: 5px;
     }
-    /* 기본 스타일 */
+    /* OCR 드롭다운 스타일 */
+    #ocrDropdown {
+      display: none;
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      z-index: 1000;
+      padding: 5px;
+    }
+    #ocrDropdown button {
+      margin: 2px;
+      padding: 5px 10px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    /* 기본 스타일 (이하 기존 코드와 동일) */
     .color-option {
       width: 30px;
       height: 30px;
@@ -42,7 +58,6 @@
     .color-option.selected {
       border-color: #007bff;
     }
-    /* Dropdown containers (Text, Pencil, Highlighter, Eraser, Image options) */
     #pencilOptions, #textOptions, #eraserOptions, #highlighterOptions, #imageOptions {
       display: none;
       position: absolute;
@@ -82,7 +97,6 @@
     .canvas-wrapper canvas {
       border: 1px solid #ccc;
     }
-    /* Text overlay style */
     .text-layer {
       position: absolute;
       top: 0;
@@ -99,7 +113,6 @@
     .text-layer.selected {
       border-color: #007bff;
     }
-    /* Image overlay style */
     .image-layer {
       position: absolute;
       border: 1px dashed #000;
@@ -122,6 +135,8 @@
       cursor: se-resize;
     }
   </style>
+  <!-- Tesseract.js 라이브러리 -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@v4.0.2/dist/tesseract.min.js"></script>
 </head>
 <body>
   <h1>PDF Editor</h1>
@@ -163,7 +178,6 @@
           <div class="color-option" data-color="#0000FF" style="background-color: #0000FF;"></div>
         </div>
         <label for="pencilThickness">Thickness:</label>
-        <!-- 기본값을 10으로 설정 -->
         <input type="range" id="pencilThickness" min="1" max="50" value="10">
         <span id="pencilThicknessLabel">10 px</span>
       </div>
@@ -182,7 +196,6 @@
           <div class="color-option" data-color="#90EE90" style="background-color: #90EE90;"></div>
         </div>
         <label for="highlighterTransparencyInput">Transparency (%):</label>
-        <!-- 수정: 투명도 슬라이더 값이 높을수록 더 투명하게, 즉 opacity = 1 - (slider / 100) -->
         <input type="range" id="highlighterTransparencyInput" min="0" max="100" value="90" step="1">
         <span id="highlighterTransparencyLabel">90%</span>
         <label for="highlighterThickness">Thickness:</label>
@@ -214,6 +227,13 @@
 
     <button id="downloadButton" disabled>Download PDF</button>
     <button id="resetButton">Reset</button>
+    <!-- OCR 버튼 -->
+    <button id="ocrButton" disabled>OCR</button>
+    <!-- OCR 드롭다운: 언어 선택 -->
+    <div id="ocrDropdown">
+      <button class="ocr-lang" data-lang="kor">KOR</button>
+      <button class="ocr-lang" data-lang="eng">ENG</button>
+    </div>
   </div>
 
   <!-- Hidden file inputs -->
@@ -238,6 +258,8 @@
     const resetButton = document.getElementById('resetButton');
     const addTextButton = document.getElementById('addTextButton');
     const addImageButton = document.getElementById('addImageButton');
+    const ocrButton = document.getElementById('ocrButton');
+    const ocrDropdown = document.getElementById('ocrDropdown');
 
     // Pencil
     const pencilColor = document.getElementById('pencilColor');
@@ -268,7 +290,7 @@
     const textColor = document.getElementById('textColor');
     const textBackgroundColor = document.getElementById('textBackgroundColor');
 
-    // Image Options (for resizing in mm)
+    // Image Options (mm units)
     const imageOptionsDiv = document.getElementById('imageOptions');
     const imageWidthInput = document.getElementById('imageWidth');
     const imageHeightInput = document.getElementById('imageHeight');
@@ -284,11 +306,8 @@
     let initialX = 0, initialY = 0;
 
     // Highlighter settings:
-    // 슬라이더 값이 0이면 불투명(1), 100이면 완전 투명(0)이 되어야 하므로:
     let hlColor = highlighterColorInput.value;
     let hlTransparency = 1 - (highlighterTransparencyInput.value / 100);
-
-    // 투명도 조절 핸들러
     highlighterTransparencyInput.addEventListener('input', () => {
       hlTransparency = 1 - (highlighterTransparencyInput.value / 100);
       highlighterTransparencyLabel.textContent = highlighterTransparencyInput.value + "%";
@@ -297,7 +316,6 @@
 
     /*********************** Utility: Create a circular cursor data URL ***********************/
     function getCursorDataUrl(size, color, alpha=1) {
-      // 각 도구의 슬라이더 값(size)을 그대로 포인터 크기로 사용
       const pointerSize = size;
       const cursorCanvas = document.createElement('canvas');
       cursorCanvas.width = pointerSize;
@@ -312,7 +330,7 @@
       return cursorCanvas.toDataURL();
     }
 
-    // Update cursor: 모든 도구에서 슬라이더 값 그대로 포인터 크기로 적용
+    // Update cursor for each canvas based on the current tool
     function updateCursor() {
       canvases.forEach(canvas => {
         let thickness, color, alpha = 1;
@@ -325,9 +343,6 @@
         } else if (currentTool === 'highlighter') {
           thickness = parseInt(highlighterThickness.value);
           color = hlColor;
-          // 하이라이터의 경우, 드로잉 시 투명도는 hlTransparency를 그대로 사용하지만,
-          // 포인터는 실제 색상(불투명)에 가깝게 보고 싶다면 alpha 값을 그대로 쓰거나, 원하는 경우 조절 가능합니다.
-          // 여기서는 포인터에도 동일하게 적용
           alpha = hlTransparency;
           const pointerSize = thickness;
           const cursorUrl = getCursorDataUrl(pointerSize, color, alpha);
@@ -407,6 +422,7 @@
       highlighterButton.disabled = false;
       eraserButton.disabled = false;
       downloadButton.disabled = false;
+      ocrButton.disabled = false;
       updateCursor();
     });
     async function renderPDF() {
@@ -479,7 +495,6 @@
         context.shadowBlur = 5;
         context.strokeStyle = hlColor;
         context.lineWidth = highlighterThickness.value;
-        // 실제 그리기 시 투명도는 hlTransparency를 그대로 사용 (0이면 완전 투명, 1이면 불투명)
         context.globalAlpha = hlTransparency;
         context.globalCompositeOperation = 'source-over';
       } else if (currentTool === 'eraser') {
@@ -656,6 +671,8 @@
       }
       selectedImageElement = element;
       selectedImageElement.classList.add('selected');
+      // 이미지 선택 시 OCR 버튼 활성화
+      ocrButton.disabled = false;
       textOptions.style.display = 'none';
     }
 
@@ -690,6 +707,7 @@
           selectedImageElement.remove();
           selectedImageElement = null;
           imageOptionsDiv.style.display = 'none';
+          ocrButton.disabled = true;
         }
       }
     }
@@ -707,7 +725,6 @@
     });
     pencilButton.addEventListener('click', () => {
       currentTool = 'pencil';
-      // 초기화하지 않고, 기존 슬라이더 값(사용자가 마지막에 조절한 값)을 그대로 사용함
       pencilOptions.style.display = (pencilOptions.style.display === 'flex') ? 'none' : 'block';
       textOptions.style.display = 'none';
       eraserOptions.style.display = 'none';
@@ -716,7 +733,6 @@
     });
     highlighterButton.addEventListener('click', () => {
       currentTool = 'highlighter';
-      // 기존에 고정으로 설정했던 초기화 코드를 제거하여, 마지막에 사용한 값(슬라이더 값)이 그대로 유지됨
       highlighterOptions.style.display = (highlighterOptions.style.display === 'flex') ? 'none' : 'block';
       pencilOptions.style.display = 'none';
       textOptions.style.display = 'none';
@@ -724,10 +740,8 @@
       updateHighlighterSettings();
       updateCursor();
     });
-
     eraserButton.addEventListener('click', () => {
       currentTool = 'eraser';
-      // 초기화 코드를 제거하여, 이전에 조절한 eraserThicknessInput.value가 그대로 유지됨
       eraserOptions.style.display = (eraserOptions.style.display === 'block') ? 'none' : 'block';
       pencilOptions.style.display = 'none';
       textOptions.style.display = 'none';
@@ -742,8 +756,6 @@
       eraserThicknessLabel.textContent = eraserThicknessInput.value + " px";
       updateCursor();
     });
-
-    /*********************** Dropdown Change Updates for Selected Text Box ***********************/
     textColor.addEventListener('change', () => {
       if (selectedTextElement) {
         selectedTextElement.style.color = textColor.value;
@@ -764,17 +776,14 @@
         selectedTextElement.style.fontSize = textFontSize.value + "px";
       }
     });
-
-    /*********************** Close Dropdowns on Outside Click ***********************/
     document.addEventListener('click', function(e) {
-      if (!e.target.closest('.dropdown-wrapper')) {
-        if (!document.activeElement || !document.activeElement.isContentEditable) {
-          textOptions.style.display = 'none';
-          pencilOptions.style.display = 'none';
-          eraserOptions.style.display = 'none';
-          highlighterOptions.style.display = 'none';
-          imageOptionsDiv.style.display = 'none';
-        }
+      if (!e.target.closest('.dropdown-wrapper') && !e.target.closest('#ocrDropdown')) {
+        textOptions.style.display = 'none';
+        pencilOptions.style.display = 'none';
+        eraserOptions.style.display = 'none';
+        highlighterOptions.style.display = 'none';
+        imageOptionsDiv.style.display = 'none';
+        ocrDropdown.style.display = 'none';
       }
     });
 
@@ -796,13 +805,14 @@
       reader.readAsDataURL(file);
     });
 
-    /*********************** Reset Button (Clear all overlays and re-render PDF) ***********************/
+    /*********************** Reset Button (Clear overlays and re-render PDF) ***********************/
     resetButton.addEventListener('click', () => {
       if (!pdfBytes) return;
       renderPDF();
+      ocrButton.disabled = true;
     });
 
-    /*********************** PDF Download (including Text and Image Overlays) ***********************/
+    /*********************** PDF Download (including overlays) ***********************/
     downloadButton.addEventListener('click', async () => {
       try {
         const pdfDoc = await PDFLib.PDFDocument.create();
@@ -855,8 +865,6 @@
           page.drawImage(pngImage, { x: 0, y: 0, width: width, height: height });
         }
         const pdfBytesData = await pdfDoc.save();
-
-        // File System Access API로 파일 저장 (지원하는 브라우저에서만 동작)
         if (window.showSaveFilePicker) {
           const handle = await window.showSaveFilePicker({
             suggestedName: 'edited.pdf',
@@ -870,7 +878,6 @@
           await writableStream.close();
           alert('PDF 파일이 저장되었습니다.');
         } else {
-          // 지원하지 않는 경우, 기본 다운로드 방식 사용
           const blob = new Blob([pdfBytesData], { type: 'application/pdf' });
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -884,6 +891,94 @@
       } catch (error) {
         console.error('Error during PDF download:', error);
       }
+    });
+
+    /*********************** OCR Functionality ***********************/
+    // OCR 버튼 클릭 시 드롭다운 토글
+    ocrButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (ocrDropdown.style.display === 'none' || ocrDropdown.style.display === '') {
+        // OCR 버튼 아래에 드롭다운 위치 지정
+        const rect = ocrButton.getBoundingClientRect();
+        ocrDropdown.style.left = rect.left + "px";
+        ocrDropdown.style.top = (rect.bottom + window.scrollY) + "px";
+        ocrDropdown.style.display = 'block';
+      } else {
+        ocrDropdown.style.display = 'none';
+      }
+    });
+
+    // OCR 드롭다운 내 언어 버튼 이벤트
+    document.querySelectorAll('.ocr-lang').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        ocrDropdown.style.display = 'none';
+        const lang = btn.getAttribute('data-lang');
+        if (!selectedImageElement) {
+          alert("이미지 오버레이를 선택해주세요.");
+          return;
+        }
+        const img = selectedImageElement.querySelector('img');
+        if (!img) {
+          alert("선택된 이미지 오버레이에 이미지가 없습니다.");
+          return;
+        }
+        ocrButton.textContent = "Processing...";
+        ocrButton.disabled = true;
+        try {
+          const { data: { text } } = await Tesseract.recognize(img.src, lang, { logger: m => console.log(m) });
+          console.log("OCR 결과:", text);
+          // 인식된 텍스트로 텍스트 오버레이 생성
+          const canvasWrapper = selectedImageElement.parentElement;
+          const newText = document.createElement('div');
+          newText.classList.add('text-layer');
+          newText.contentEditable = true;
+          newText.style.left = selectedImageElement.style.left;
+          newText.style.top = selectedImageElement.style.top;
+          newText.style.width = selectedImageElement.offsetWidth + "px";
+          newText.style.minHeight = selectedImageElement.offsetHeight + "px";
+          newText.style.color = textColor.value;
+          newText.style.backgroundColor = textBackgroundColor.value;
+          newText.style.fontSize = textFontSize.value + 'px';
+          newText.style.fontFamily = textFont.value;
+          newText.textContent = text;
+          newText.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
+            initialX = e.clientX - newText.getBoundingClientRect().left;
+            initialY = e.clientY - newText.getBoundingClientRect().top;
+            function onMouseMove(moveEvent) {
+              const newX = moveEvent.clientX - canvasWrapper.getBoundingClientRect().left - initialX;
+              const newY = moveEvent.clientY - canvasWrapper.getBoundingClientRect().top - initialY;
+              newText.style.left = newX + 'px';
+              newText.style.top = newY + 'px';
+            }
+            function onMouseUp() {
+              newText.contentEditable = true;
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+            }
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+          });
+          newText.addEventListener('click', function(e) {
+            e.stopPropagation();
+            selectTextElement(newText);
+          });
+          newText.addEventListener('dblclick', function(e) {
+            e.stopPropagation();
+            selectTextElement(newText);
+            newText.contentEditable = true;
+            newText.focus();
+          });
+          canvasWrapper.appendChild(newText);
+        } catch (error) {
+          console.error("OCR 에러:", error);
+          alert("OCR 수행 중 오류 발생: " + error.message);
+        } finally {
+          ocrButton.textContent = "OCR";
+          ocrButton.disabled = false;
+        }
+      });
     });
   </script>
 </body>
